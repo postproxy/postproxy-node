@@ -25,7 +25,7 @@ async function main() {
     "Check out this image!",
     [profileId],
     {
-      media: ["https://postproxy.dev/_astro/step-1.7haCgkzv_1bGNAH.png"],
+      media: ["https://example.com/image.jpg"],
       draft: true,
     },
   );
