@@ -20,7 +20,7 @@ const client = new PostProxy("your-api-key", {
 });
 
 // List profiles
-const profiles = await client.profiles.list();
+const { data: profiles } = await client.profiles.list();
 
 // Create a post
 const post = await client.posts.create(
@@ -127,17 +127,17 @@ console.log(result.deleted); // true
 
 ```typescript
 // List all profiles
-const profiles = await client.profiles.list();
+const { data: profiles } = await client.profiles.list();
 
 // List profiles in a specific group (overrides client default)
-const profiles = await client.profiles.list({ profileGroupId: "pg-other" });
+const { data: profiles } = await client.profiles.list({ profileGroupId: "pg-other" });
 
 // Get a single profile
 const profile = await client.profiles.get("profile-id");
 console.log(profile.name, profile.platform, profile.status);
 
 // Get available placements for a profile
-const placements = await client.profiles.placements("profile-id");
+const { data: placements } = await client.profiles.placements("profile-id");
 for (const p of placements) {
   console.log(p.id, p.name);
 }
@@ -151,7 +151,7 @@ console.log(result.success); // true
 
 ```typescript
 // List all groups
-const groups = await client.profileGroups.list();
+const { data: groups } = await client.profileGroups.list();
 
 // Get a single group
 const group = await client.profileGroups.get("pg-id");
@@ -200,7 +200,14 @@ try {
 
 ## Types
 
-All responses are typed with TypeScript interfaces. Key types:
+All list methods return a response object with a `data` array — use destructuring to access items directly:
+
+```typescript
+const { data: profiles } = await client.profiles.list();
+const { data: posts } = await client.posts.list();  // also has total, page, per_page
+```
+
+Key types:
 
 | Type | Fields |
 |---|---|
@@ -208,6 +215,7 @@ All responses are typed with TypeScript interfaces. Key types:
 | `Profile` | id, name, status, platform, profile_group_id, expires_at, post_count |
 | `ProfileGroup` | id, name, profiles_count |
 | `PlatformResult` | platform, status, params, error, attempted_at, insights |
+| `ListResponse<T>` | data |
 | `PaginatedResponse<T>` | total, page, per_page, data |
 
 ### Platform parameter types

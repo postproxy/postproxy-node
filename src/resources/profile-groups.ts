@@ -1,6 +1,7 @@
 import type { PostProxy } from "../client";
 import type {
   ProfileGroup,
+  ListResponse,
   DeleteResponse,
   ConnectionResponse,
 } from "../types";
@@ -13,9 +14,8 @@ export class ProfileGroupsResource {
     this.client = client;
   }
 
-  async list(): Promise<ProfileGroup[]> {
-    const res = (await this.client.request("GET", "/profile_groups")) as { data: ProfileGroup[] };
-    return res.data;
+  async list(): Promise<ListResponse<ProfileGroup>> {
+    return (await this.client.request("GET", "/profile_groups")) as ListResponse<ProfileGroup>;
   }
 
   async get(id: string): Promise<ProfileGroup> {

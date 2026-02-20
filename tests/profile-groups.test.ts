@@ -12,9 +12,9 @@ describe("Profile Groups Resource", () => {
     const { client } = createMockClient({
       responseBody: { data: [MOCK_GROUP] },
     });
-    const groups = await client.profileGroups.list();
-    expect(groups).toHaveLength(1);
-    expect(groups[0].name).toBe("Test Group");
+    const result = await client.profileGroups.list();
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].name).toBe("Test Group");
   });
 
   it("gets a profile group by id", async () => {
