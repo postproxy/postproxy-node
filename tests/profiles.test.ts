@@ -16,10 +16,10 @@ describe("Profiles Resource", () => {
     const { client } = createMockClient({
       responseBody: { data: [MOCK_PROFILE] },
     });
-    const profiles = await client.profiles.list();
-    expect(profiles).toHaveLength(1);
-    expect(profiles[0].id).toBe("prof-1");
-    expect(profiles[0].platform).toBe("instagram");
+    const result = await client.profiles.list();
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].id).toBe("prof-1");
+    expect(result.data[0].platform).toBe("instagram");
   });
 
   it("gets a profile by id", async () => {
@@ -35,9 +35,9 @@ describe("Profiles Resource", () => {
     const { client, getRequests } = createMockClient({
       responseBody: { data: [{ id: "pl-1", name: "Feed" }] },
     });
-    const placements = await client.profiles.placements("prof-1");
-    expect(placements).toHaveLength(1);
-    expect(placements[0].name).toBe("Feed");
+    const result = await client.profiles.placements("prof-1");
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].name).toBe("Feed");
     expect(getRequests()[0].url).toContain("/profiles/prof-1/placements");
   });
 

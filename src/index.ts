@@ -34,6 +34,7 @@ export type {
   Insights,
   PlatformResult,
   Post,
+  ListResponse,
   PaginatedResponse,
   DeleteResponse,
   SuccessResponse,

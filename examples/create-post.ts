@@ -9,7 +9,7 @@ async function main() {
   });
 
   // List profiles
-  const profiles = await client.profiles.list();
+  const { data: profiles } = await client.profiles.list();
   console.log("Profiles:", profiles);
 
   const profileId = profiles[0].id;

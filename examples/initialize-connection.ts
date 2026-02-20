@@ -9,7 +9,7 @@ async function main() {
   });
 
   // List profile groups
-  const groups = await client.profileGroups.list();
+  const { data: groups } = await client.profileGroups.list();
   console.log("Profile Groups:", groups);
 
   // Initialize a connection

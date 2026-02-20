@@ -1,5 +1,5 @@
 import type { PostProxy } from "../client";
-import type { Profile, Placement, SuccessResponse } from "../types";
+import type { Profile, Placement, ListResponse, SuccessResponse } from "../types";
 
 export class ProfilesResource {
   private client: PostProxy;
@@ -10,11 +10,10 @@ export class ProfilesResource {
 
   async list(
     options: { profileGroupId?: string } = {},
-  ): Promise<Profile[]> {
-    const res = (await this.client.request("GET", "/profiles", {
+  ): Promise<ListResponse<Profile>> {
+    return (await this.client.request("GET", "/profiles", {
       profileGroupId: options.profileGroupId,
-    })) as { data: Profile[] };
-    return res.data;
+    })) as ListResponse<Profile>;
   }
 
   async get(
@@ -29,11 +28,10 @@ export class ProfilesResource {
   async placements(
     id: string,
     options: { profileGroupId?: string } = {},
-  ): Promise<Placement[]> {
-    const res = (await this.client.request("GET", `/profiles/${id}/placements`, {
+  ): Promise<ListResponse<Placement>> {
+    return (await this.client.request("GET", `/profiles/${id}/placements`, {
       profileGroupId: options.profileGroupId,
-    })) as { data: Placement[] };
-    return res.data;
+    })) as ListResponse<Placement>;
   }
 
   async delete(

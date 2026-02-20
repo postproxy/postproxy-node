@@ -61,11 +61,14 @@ export interface Post {
   platforms: PlatformResult[];
 }
 
-export interface PaginatedResponse<T> {
+export interface ListResponse<T> {
+  data: T[];
+}
+
+export interface PaginatedResponse<T> extends ListResponse<T> {
   total: number;
   page: number;
   per_page: number;
-  data: T[];
 }
 
 export interface DeleteResponse {
