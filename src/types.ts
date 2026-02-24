@@ -84,6 +84,27 @@ export interface ConnectionResponse {
   success: boolean;
 }
 
+// --- Stats Models ---
+
+export interface StatsRecord {
+  stats: Record<string, number>;
+  recorded_at: string;
+}
+
+export interface PlatformStats {
+  profile_id: string;
+  platform: Platform;
+  records: StatsRecord[];
+}
+
+export interface PostStats {
+  platforms: PlatformStats[];
+}
+
+export interface StatsResponse {
+  data: Record<string, PostStats>;
+}
+
 // --- Platform Parameter Models ---
 
 export interface FacebookParams {

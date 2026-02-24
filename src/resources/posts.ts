@@ -6,6 +6,7 @@ import type {
   PaginatedResponse,
   DeleteResponse,
   PlatformParams,
+  StatsResponse,
 } from "../types";
 import type { PostStatus, Platform } from "../constants";
 
@@ -172,6 +173,37 @@ export class PostsResource {
     return (await this.client.request("POST", `/posts/${id}/publish`, {
       profileGroupId: options.profileGroupId,
     })) as Post;
+  }
+
+  async stats(
+    postIds: string[],
+    options: {
+      profiles?: string[];
+      from?: Date | string;
+      to?: Date | string;
+      profileGroupId?: string;
+    } = {},
+  ): Promise<StatsResponse> {
+    const params: Record<string, string> = {
+      post_ids: postIds.join(","),
+    };
+
+    if (options.profiles) params.profiles = options.profiles.join(",");
+    if (options.from) {
+      params.from =
+        options.from instanceof Date
+          ? options.from.toISOString()
+          : options.from;
+    }
+    if (options.to) {
+      params.to =
+        options.to instanceof Date ? options.to.toISOString() : options.to;
+    }
+
+    return (await this.client.request("GET", "/posts/stats", {
+      params,
+      profileGroupId: options.profileGroupId,
+    })) as StatsResponse;
   }
 
   async delete(
