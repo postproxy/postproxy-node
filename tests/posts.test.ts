@@ -126,6 +126,104 @@ describe("Posts Resource", () => {
     expect(getRequests()[0].url).toContain("/posts/post-1/publish");
   });
 
+  it("fetches stats for post ids", async () => {
+    const mockStats = {
+      data: {
+        "post-1": {
+          platforms: [
+            {
+              profile_id: "prof-1",
+              platform: "instagram",
+              records: [
+                {
+                  stats: { impressions: 1200, likes: 85, comments: 12 },
+                  recorded_at: "2026-02-20T12:00:00Z",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    };
+    const { client, getRequests } = createMockClient({
+      responseBody: mockStats,
+    });
+    const result = await client.posts.stats(["post-1"]);
+
+    expect(result.data["post-1"].platforms).toHaveLength(1);
+    expect(result.data["post-1"].platforms[0].platform).toBe("instagram");
+    expect(result.data["post-1"].platforms[0].records[0].stats.impressions).toBe(1200);
+
+    const url = getRequests()[0].url;
+    expect(url).toContain("/posts/stats");
+    expect(url).toContain("post_ids=post-1");
+    expect(getRequests()[0].method).toBe("GET");
+  });
+
+  it("fetches stats with profile and time filters", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { data: {} },
+    });
+    await client.posts.stats(["post-1", "post-2"], {
+      profiles: ["instagram", "prof-abc"],
+      from: "2026-02-01T00:00:00Z",
+      to: "2026-02-24T00:00:00Z",
+    });
+
+    const url = getRequests()[0].url;
+    expect(url).toContain("post_ids=post-1%2Cpost-2");
+    expect(url).toContain("profiles=instagram%2Cprof-abc");
+    expect(url).toContain("from=2026-02-01T00%3A00%3A00Z");
+    expect(url).toContain("to=2026-02-24T00%3A00%3A00Z");
+  });
+
+  it("fetches stats with Date objects for from/to", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { data: {} },
+    });
+    const fromDate = new Date("2026-02-01T00:00:00Z");
+    const toDate = new Date("2026-02-24T00:00:00Z");
+    await client.posts.stats(["post-1"], { from: fromDate, to: toDate });
+
+    const url = getRequests()[0].url;
+    expect(url).toContain("from=2026-02-01T00%3A00%3A00.000Z");
+    expect(url).toContain("to=2026-02-24T00%3A00%3A00.000Z");
+  });
+
+  it("fetches stats for multiple posts", async () => {
+    const mockStats = {
+      data: {
+        "post-1": {
+          platforms: [
+            {
+              profile_id: "prof-1",
+              platform: "instagram",
+              records: [
+                { stats: { impressions: 100 }, recorded_at: "2026-02-20T12:00:00Z" },
+              ],
+            },
+          ],
+        },
+        "post-2": {
+          platforms: [
+            {
+              profile_id: "prof-2",
+              platform: "twitter",
+              records: [
+                { stats: { impressions: 430, likes: 22 }, recorded_at: "2026-02-20T12:00:00Z" },
+              ],
+            },
+          ],
+        },
+      },
+    };
+    const { client } = createMockClient({ responseBody: mockStats });
+    const result = await client.posts.stats(["post-1", "post-2"]);
+
+    expect(Object.keys(result.data)).toHaveLength(2);
+    expect(result.data["post-2"].platforms[0].platform).toBe("twitter");
+  });
+
   it("deletes a post", async () => {
     const { client, getRequests } = createMockClient({
       responseBody: { deleted: true },

@@ -121,6 +121,21 @@ const post = await client.posts.publishDraft("post-id");
 // Delete a post
 const result = await client.posts.delete("post-id");
 console.log(result.deleted); // true
+
+// Get stats for posts
+const stats = await client.posts.stats(["post-id-1", "post-id-2"]);
+for (const [postId, postStats] of Object.entries(stats.data)) {
+  for (const platform of postStats.platforms) {
+    console.log(platform.platform, platform.records);
+  }
+}
+
+// Get stats with filters (by platform/profile and time range)
+const stats = await client.posts.stats(["post-id"], {
+  profiles: ["instagram", "twitter"],
+  from: "2026-02-01T00:00:00Z",
+  to: "2026-02-24T00:00:00Z",
+});
 ```
 
 ### Profiles
@@ -217,6 +232,10 @@ Key types:
 | `PlatformResult` | platform, status, params, error, attempted_at, insights |
 | `ListResponse<T>` | data |
 | `PaginatedResponse<T>` | total, page, per_page, data |
+| `StatsResponse` | data (keyed by post id) |
+| `PostStats` | platforms |
+| `PlatformStats` | profile_id, platform, records |
+| `StatsRecord` | stats, recorded_at |
 
 ### Platform parameter types
 

@@ -48,4 +48,8 @@ export type {
   ThreadsParams,
   TwitterParams,
   PlatformParams,
+  StatsRecord,
+  PlatformStats,
+  PostStats,
+  StatsResponse,
 } from "./types";
