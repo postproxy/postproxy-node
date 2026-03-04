@@ -118,6 +118,19 @@ const post = await client.posts.create(
 // Publish a draft
 const post = await client.posts.publishDraft("post-id");
 
+// Create a thread post
+const post = await client.posts.create(
+  "Thread starts here",
+  ["profile-id"],
+  {
+    thread: [
+      { body: "Second post in the thread" },
+      { body: "Third with media", media: ["https://example.com/img.jpg"] },
+    ],
+  },
+);
+console.log(post.thread); // ThreadChild[]
+
 // Delete a post
 const result = await client.posts.delete("post-id");
 console.log(result.deleted); // true
@@ -136,6 +149,53 @@ const stats = await client.posts.stats(["post-id"], {
   from: "2026-02-01T00:00:00Z",
   to: "2026-02-24T00:00:00Z",
 });
+```
+
+### Webhooks
+
+```typescript
+// List webhooks
+const { data: webhooks } = await client.webhooks.list();
+
+// Get a webhook
+const webhook = await client.webhooks.get("wh-id");
+
+// Create a webhook
+const webhook = await client.webhooks.create(
+  "https://example.com/webhook",
+  ["post.published", "post.failed"],
+  { description: "My webhook" },
+);
+console.log(webhook.id, webhook.secret);
+
+// Update a webhook
+const webhook = await client.webhooks.update("wh-id", {
+  events: ["post.published"],
+  enabled: false,
+});
+
+// Delete a webhook
+const result = await client.webhooks.delete("wh-id");
+
+// List deliveries
+const deliveries = await client.webhooks.deliveries("wh-id", {
+  page: 0,
+  perPage: 10,
+});
+```
+
+#### Signature verification
+
+Verify incoming webhook signatures using HMAC-SHA256:
+
+```typescript
+import { verifySignature } from "postproxy-sdk";
+
+const isValid = verifySignature(
+  requestBody,                          // raw request body string
+  request.headers["x-postproxy-signature"],  // "t=...,v1=..."
+  "whsec_...",                          // webhook secret
+);
 ```
 
 ### Profiles
@@ -226,9 +286,14 @@ Key types:
 
 | Type | Fields |
 |---|---|
-| `Post` | id, body, status, scheduled_at, created_at, platforms |
+| `Post` | id, body, status, scheduled_at, created_at, media, thread, platforms |
 | `Profile` | id, name, status, platform, profile_group_id, expires_at, post_count |
 | `ProfileGroup` | id, name, profiles_count |
+| `Media` | id, type, url, status |
+| `ThreadChild` | id, body, media |
+| `ThreadChildInput` | body, media |
+| `Webhook` | id, url, events, secret, enabled, description, created_at |
+| `WebhookDelivery` | id, event_id, event_type, response_status, attempt_number, success, attempted_at, created_at |
 | `PlatformResult` | platform, status, params, error, attempted_at, insights |
 | `ListResponse<T>` | data |
 | `PaginatedResponse<T>` | total, page, per_page, data |

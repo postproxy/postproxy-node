@@ -17,7 +17,10 @@ export type PostStatus =
   | "draft"
   | "processing"
   | "processed"
-  | "scheduled";
+  | "scheduled"
+  | "media_processing_failed";
+
+export type MediaStatus = "pending" | "processed" | "failed";
 
 export type PlatformPostStatus =
   | "pending"

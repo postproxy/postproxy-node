@@ -224,6 +224,54 @@ describe("Posts Resource", () => {
     expect(result.data["post-2"].platforms[0].platform).toBe("twitter");
   });
 
+  it("creates a post with thread", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: {
+        ...MOCK_POST,
+        thread: [
+          { id: "t-1", body: "Thread reply 1", media: [] },
+          { id: "t-2", body: "Thread reply 2", media: [] },
+        ],
+      },
+    });
+    const post = await client.posts.create("Hello world", ["profile-1"], {
+      thread: [
+        { body: "Thread reply 1" },
+        { body: "Thread reply 2", media: ["https://example.com/img.jpg"] },
+      ],
+    });
+
+    expect(post.thread).toHaveLength(2);
+    expect(post.thread![0].body).toBe("Thread reply 1");
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    const thread = body.thread as Array<Record<string, unknown>>;
+    expect(thread).toHaveLength(2);
+    expect(thread[0].body).toBe("Thread reply 1");
+    expect(thread[1].media).toEqual(["https://example.com/img.jpg"]);
+  });
+
+  it("gets a post with media and thread", async () => {
+    const { client } = createMockClient({
+      responseBody: {
+        ...MOCK_POST,
+        status: "media_processing_failed",
+        media: [
+          { id: "m-1", status: "processed", content_type: "image/jpeg", url: "https://cdn.example.com/img.jpg" },
+        ],
+        thread: [
+          { id: "t-1", body: "Reply", media: [{ id: "m-2", status: "pending", content_type: "video/mp4" }] },
+        ],
+      },
+    });
+    const post = await client.posts.get("post-1");
+    expect(post.status).toBe("media_processing_failed");
+    expect(post.media).toHaveLength(1);
+    expect(post.media![0].status).toBe("processed");
+    expect(post.thread).toHaveLength(1);
+    expect(post.thread![0].body).toBe("Reply");
+  });
+
   it("deletes a post", async () => {
     const { client, getRequests } = createMockClient({
       responseBody: { deleted: true },

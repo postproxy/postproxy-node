@@ -9,6 +9,7 @@ import {
 import { PostsResource } from "./resources/posts";
 import { ProfilesResource } from "./resources/profiles";
 import { ProfileGroupsResource } from "./resources/profile-groups";
+import { WebhooksResource } from "./resources/webhooks";
 
 export interface PostProxyOptions {
   baseUrl?: string;
@@ -23,6 +24,7 @@ export class PostProxy {
   readonly posts: PostsResource;
   readonly profiles: ProfilesResource;
   readonly profileGroups: ProfileGroupsResource;
+  readonly webhooks: WebhooksResource;
 
   constructor(apiKey: string, options: PostProxyOptions = {}) {
     this.apiKey = apiKey;
@@ -32,6 +34,7 @@ export class PostProxy {
     this.posts = new PostsResource(this);
     this.profiles = new ProfilesResource(this);
     this.profileGroups = new ProfileGroupsResource(this);
+    this.webhooks = new WebhooksResource(this);
   }
 
   async request(
