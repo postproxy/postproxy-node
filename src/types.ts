@@ -3,6 +3,7 @@ import type {
   ProfileStatus,
   PostStatus,
   PlatformPostStatus,
+  MediaStatus,
   InstagramFormat,
   FacebookFormat,
   TikTokFormat,
@@ -52,13 +53,36 @@ export interface PlatformResult {
   insights: Insights | null;
 }
 
+export interface Media {
+  id: string;
+  status: MediaStatus;
+  error_message: string | null;
+  content_type: string;
+  source_url: string | null;
+  url: string | null;
+}
+
+export interface ThreadChild {
+  id: string;
+  body: string;
+  media: Media[];
+}
+
+export interface ThreadChildInput {
+  body: string;
+  media?: string[];
+  mediaFiles?: string[];
+}
+
 export interface Post {
   id: string;
   body: string;
   status: PostStatus;
   scheduled_at: string | null;
   created_at: string;
+  media: Media[];
   platforms: PlatformResult[];
+  thread: ThreadChild[];
 }
 
 export interface ListResponse<T> {
@@ -105,6 +129,30 @@ export interface StatsResponse {
   data: Record<string, PostStats>;
 }
 
+// --- Webhook Models ---
+
+export interface Webhook {
+  id: string;
+  url: string;
+  events: string[];
+  enabled: boolean;
+  description: string | null;
+  secret?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  event_id: string;
+  event_type: string;
+  response_status: number | null;
+  attempt_number: number;
+  success: boolean;
+  attempted_at: string;
+  created_at: string;
+}
+
 // --- Platform Parameter Models ---
 
 export interface FacebookParams {
@@ -146,6 +194,7 @@ export interface YouTubeParams {
   title?: string;
   privacy_status?: YouTubePrivacy;
   cover_url?: string;
+  made_for_kids?: boolean;
 }
 
 export interface PinterestParams {

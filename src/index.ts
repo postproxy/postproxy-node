@@ -6,6 +6,7 @@ export {
   type ProfileStatus,
   type PostStatus,
   type PlatformPostStatus,
+  type MediaStatus,
   type InstagramFormat,
   type FacebookFormat,
   type TikTokFormat,
@@ -32,7 +33,10 @@ export type {
   ProfileGroup,
   Placement,
   Insights,
+  Media,
   PlatformResult,
+  ThreadChild,
+  ThreadChildInput,
   Post,
   ListResponse,
   PaginatedResponse,
@@ -51,5 +55,9 @@ export type {
   StatsRecord,
   PlatformStats,
   PostStats,
+  Webhook,
+  WebhookDelivery,
   StatsResponse,
 } from "./types";
+
+export { verifySignature } from "./webhooks";

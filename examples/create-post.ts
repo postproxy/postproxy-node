@@ -1,4 +1,4 @@
-import { PostProxy, type PlatformParams } from "postproxy-sdk";
+import { PostProxy, type PlatformParams, type ThreadChildInput } from "postproxy-sdk";
 
 const API_KEY = "POSTPROXY_API_KEY";
 const PROFILE_GROUP_ID = "your-profile-group-id";
@@ -86,6 +86,20 @@ async function main() {
     status: "pending",
   });
   console.log("Posts:", postList);
+
+  // Create a thread post
+  const thread: ThreadChildInput[] = [
+    { body: "First, connect your social accounts." },
+    { body: "Then, create posts with media!", media: ["https://example.com/demo.jpg"] },
+    { body: "Finally, schedule or publish instantly." },
+  ];
+
+  const threadPost = await client.posts.create(
+    "Here's a thread about PostProxy 🧵",
+    [profileId],
+    { thread },
+  );
+  console.log("Thread post:", threadPost.id, `(${threadPost.thread.length} children)`);
 
   // Delete a post
   const deleted = await client.posts.delete(post.id);

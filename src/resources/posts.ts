@@ -7,6 +7,7 @@ import type {
   DeleteResponse,
   PlatformParams,
   StatsResponse,
+  ThreadChildInput,
 } from "../types";
 import type { PostStatus, Platform } from "../constants";
 
@@ -76,16 +77,19 @@ export class PostsResource {
       media?: string[];
       mediaFiles?: string[];
       platforms?: PlatformParams;
+      thread?: ThreadChildInput[];
       scheduledAt?: Date | string;
       draft?: boolean;
       profileGroupId?: string;
     } = {},
   ): Promise<Post> {
-    const { media, mediaFiles, platforms, scheduledAt, draft, profileGroupId } =
+    const { media, mediaFiles, platforms, thread, scheduledAt, draft, profileGroupId } =
       options;
 
+    const hasThreadFiles = thread?.some((t) => t.mediaFiles && t.mediaFiles.length > 0);
+
     // Use multipart form data for file uploads
-    if (mediaFiles && mediaFiles.length > 0) {
+    if ((mediaFiles && mediaFiles.length > 0) || hasThreadFiles) {
       const formData = new FormData();
       formData.set("post[body]", body);
 
@@ -104,6 +108,13 @@ export class PostsResource {
 
       if (draft != null) {
         formData.set("post[draft]", String(draft));
+      }
+
+      // Add URL-based media for the parent post
+      if (media) {
+        for (const url of media) {
+          formData.append("media[]", url);
+        }
       }
 
       // Add platform params as flat form fields
@@ -129,12 +140,40 @@ export class PostsResource {
       }
 
       // Read and attach files
-      for (const filePath of mediaFiles) {
-        const fileData = await readFile(filePath);
-        const fileName = basename(filePath);
-        const mimeType = getMimeType(filePath);
-        const blob = new Blob([fileData], { type: mimeType });
-        formData.append("media[]", blob, fileName);
+      if (mediaFiles) {
+        for (const filePath of mediaFiles) {
+          const fileData = await readFile(filePath);
+          const fileName = basename(filePath);
+          const mimeType = getMimeType(filePath);
+          const blob = new Blob([fileData], { type: mimeType });
+          formData.append("media[]", blob, fileName);
+        }
+      }
+
+      // Add thread children
+      if (thread) {
+        for (let i = 0; i < thread.length; i++) {
+          const child = thread[i];
+          formData.set(`thread[${i}][body]`, child.body);
+
+          // URL-based media
+          if (child.media) {
+            for (const url of child.media) {
+              formData.append(`thread[${i}][media][]`, url);
+            }
+          }
+
+          // File-based media
+          if (child.mediaFiles) {
+            for (const filePath of child.mediaFiles) {
+              const fileData = await readFile(filePath);
+              const fileName = basename(filePath);
+              const mimeType = getMimeType(filePath);
+              const blob = new Blob([fileData], { type: mimeType });
+              formData.append(`thread[${i}][media][]`, blob, fileName);
+            }
+          }
+        }
       }
 
       return (await this.client.request("POST", "/posts", {
@@ -158,6 +197,7 @@ export class PostsResource {
       profiles,
       ...(media && { media }),
       ...(platforms && { platforms }),
+      ...(thread && { thread }),
     };
 
     return (await this.client.request("POST", "/posts", {
