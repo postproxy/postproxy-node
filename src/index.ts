@@ -58,6 +58,9 @@ export type {
   Webhook,
   WebhookDelivery,
   StatsResponse,
+  Timeslot,
+  Queue,
+  NextSlotResponse,
 } from "./types";
 
 export { verifySignature } from "./webhooks";

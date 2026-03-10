@@ -198,6 +198,56 @@ const isValid = verifySignature(
 );
 ```
 
+### Queues
+
+```typescript
+// List all queues
+const { data: queues } = await client.queues.list();
+
+// Get a queue
+const queue = await client.queues.get("queue-id");
+console.log(queue.name, queue.timeslots, queue.enabled);
+
+// Get next available slot
+const nextSlot = await client.queues.nextSlot("queue-id");
+console.log(nextSlot.next_slot);
+
+// Create a queue with timeslots
+const queue = await client.queues.create("Morning Posts", "profile-group-id", {
+  description: "Weekday morning content",
+  timezone: "America/New_York",
+  jitter: 10,
+  timeslots: [
+    { day: 1, time: "09:00" },
+    { day: 2, time: "09:00" },
+    { day: 3, time: "09:00" },
+  ],
+});
+
+// Update a queue
+const queue = await client.queues.update("queue-id", {
+  jitter: 15,
+  timeslots: [
+    { day: 6, time: "10:00" },        // add new timeslot
+    { id: 1, _destroy: true },         // remove existing timeslot
+  ],
+});
+
+// Pause/unpause a queue
+await client.queues.update("queue-id", { enabled: false });
+
+// Delete a queue
+const result = await client.queues.delete("queue-id");
+console.log(result.deleted); // true
+
+// Add a post to a queue
+const post = await client.posts.create(
+  "This post will be scheduled by the queue",
+  ["profile-id"],
+  { queueId: "queue-id", queuePriority: "high" },
+);
+```
+
 ### Profiles
 
 ```typescript
@@ -286,7 +336,7 @@ Key types:
 
 | Type | Fields |
 |---|---|
-| `Post` | id, body, status, scheduled_at, created_at, media, thread, platforms |
+| `Post` | id, body, status, scheduled_at, created_at, media, thread, platforms, queue_id, queue_priority |
 | `Profile` | id, name, status, platform, profile_group_id, expires_at, post_count |
 | `ProfileGroup` | id, name, profiles_count |
 | `Media` | id, type, url, status |
@@ -301,6 +351,9 @@ Key types:
 | `PostStats` | platforms |
 | `PlatformStats` | profile_id, platform, records |
 | `StatsRecord` | stats, recorded_at |
+| `Queue` | id, name, description, timezone, enabled, jitter, profile_group_id, timeslots, posts_count |
+| `Timeslot` | id, day, time |
+| `NextSlotResponse` | next_slot |
 
 ### Platform parameter types
 

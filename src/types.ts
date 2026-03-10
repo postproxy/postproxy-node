@@ -80,9 +80,35 @@ export interface Post {
   status: PostStatus;
   scheduled_at: string | null;
   created_at: string;
+  queue_id?: string | null;
+  queue_priority?: string | null;
   media: Media[];
   platforms: PlatformResult[];
   thread: ThreadChild[];
+}
+
+// --- Queue Models ---
+
+export interface Timeslot {
+  id: number;
+  day: number;
+  time: string;
+}
+
+export interface Queue {
+  id: string;
+  name: string;
+  description: string | null;
+  timezone: string;
+  enabled: boolean;
+  jitter: number;
+  profile_group_id: string;
+  timeslots: Timeslot[];
+  posts_count: number;
+}
+
+export interface NextSlotResponse {
+  next_slot: string;
 }
 
 export interface ListResponse<T> {
