@@ -80,10 +80,12 @@ export class PostsResource {
       thread?: ThreadChildInput[];
       scheduledAt?: Date | string;
       draft?: boolean;
+      queueId?: string;
+      queuePriority?: string;
       profileGroupId?: string;
     } = {},
   ): Promise<Post> {
-    const { media, mediaFiles, platforms, thread, scheduledAt, draft, profileGroupId } =
+    const { media, mediaFiles, platforms, thread, scheduledAt, draft, queueId, queuePriority, profileGroupId } =
       options;
 
     const hasThreadFiles = thread?.some((t) => t.mediaFiles && t.mediaFiles.length > 0);
@@ -198,6 +200,8 @@ export class PostsResource {
       ...(media && { media }),
       ...(platforms && { platforms }),
       ...(thread && { thread }),
+      ...(queueId && { queue_id: queueId }),
+      ...(queuePriority && { queue_priority: queuePriority }),
     };
 
     return (await this.client.request("POST", "/posts", {
