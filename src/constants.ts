@@ -30,7 +30,7 @@ export type PlatformPostStatus =
   | "deleted";
 
 export type InstagramFormat = "post" | "reel" | "story";
-export type FacebookFormat = "post" | "story";
+export type FacebookFormat = "post" | "story" | "reel";
 export type TikTokFormat = "video" | "image";
 export type LinkedInFormat = "post";
 export type YouTubeFormat = "post";

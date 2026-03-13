@@ -183,6 +183,7 @@ export interface WebhookDelivery {
 
 export interface FacebookParams {
   format?: FacebookFormat;
+  title?: string;
   first_comment?: string;
   page_id?: string;
 }
