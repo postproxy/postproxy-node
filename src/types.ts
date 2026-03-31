@@ -155,6 +155,30 @@ export interface StatsResponse {
   data: Record<string, PostStats>;
 }
 
+// --- Comment Models ---
+
+export interface Comment {
+  id: string;
+  external_id: string | null;
+  body: string;
+  status: string;
+  author_username: string | null;
+  author_avatar_url: string | null;
+  author_external_id: string | null;
+  parent_external_id: string | null;
+  like_count: number;
+  is_hidden: boolean;
+  permalink: string | null;
+  platform_data: Record<string, unknown> | null;
+  posted_at: string | null;
+  created_at: string;
+  replies: Comment[];
+}
+
+export interface AcceptedResponse {
+  accepted: boolean;
+}
+
 // --- Webhook Models ---
 
 export interface Webhook {
