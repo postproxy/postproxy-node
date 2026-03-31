@@ -61,6 +61,8 @@ export type {
   Timeslot,
   Queue,
   NextSlotResponse,
+  Comment,
+  AcceptedResponse,
 } from "./types";
 
 export { verifySignature } from "./webhooks";

@@ -248,6 +248,48 @@ const post = await client.posts.create(
 );
 ```
 
+### Comments
+
+```typescript
+// List comments on a post (paginated)
+const comments = await client.comments.list("post-id", "profile-id");
+for (const comment of comments.data) {
+  console.log(comment.author_username, comment.body);
+  for (const reply of comment.replies ?? []) {
+    console.log(`  ${reply.author_username}: ${reply.body}`);
+  }
+}
+
+// List with pagination
+const comments = await client.comments.list("post-id", "profile-id", {
+  page: 2,
+  perPage: 10,
+});
+
+// Get a single comment
+const comment = await client.comments.get("post-id", "comment-id", "profile-id");
+
+// Create a comment
+const comment = await client.comments.create("post-id", "profile-id", "Great post!");
+
+// Reply to a comment
+const reply = await client.comments.create("post-id", "profile-id", "Thanks!", {
+  parentId: "comment-id",
+});
+
+// Delete a comment
+const result = await client.comments.delete("post-id", "comment-id", "profile-id");
+console.log(result.accepted); // true
+
+// Hide / unhide a comment
+await client.comments.hide("post-id", "comment-id", "profile-id");
+await client.comments.unhide("post-id", "comment-id", "profile-id");
+
+// Like / unlike a comment
+await client.comments.like("post-id", "comment-id", "profile-id");
+await client.comments.unlike("post-id", "comment-id", "profile-id");
+```
+
 ### Profiles
 
 ```typescript
@@ -346,6 +388,8 @@ Key types:
 | `WebhookDelivery` | id, event_id, event_type, response_status, attempt_number, success, attempted_at, created_at |
 | `PlatformResult` | platform, status, params, error, attempted_at, insights |
 | `ListResponse<T>` | data |
+| `Comment` | id, external_id, body, status, author_username, author_avatar_url, author_external_id, parent_external_id, like_count, is_hidden, permalink, platform_data, posted_at, created_at, replies |
+| `AcceptedResponse` | accepted |
 | `PaginatedResponse<T>` | total, page, per_page, data |
 | `StatsResponse` | data (keyed by post id) |
 | `PostStats` | platforms |
