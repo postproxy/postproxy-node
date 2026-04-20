@@ -246,6 +246,9 @@ export interface YouTubeParams {
   privacy_status?: YouTubePrivacy;
   cover_url?: string;
   made_for_kids?: boolean;
+  tags?: string[];
+  category_id?: string;
+  contains_synthetic_media?: boolean;
 }
 
 export interface PinterestParams {
