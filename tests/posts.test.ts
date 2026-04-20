@@ -272,6 +272,114 @@ describe("Posts Resource", () => {
     expect(post.thread![0].body).toBe("Reply");
   });
 
+  it("updates a post body", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { ...MOCK_POST, body: "Updated" },
+    });
+    const post = await client.posts.update("post-1", { body: "Updated" });
+
+    expect(post.body).toBe("Updated");
+    const req = getRequests()[0];
+    expect(req.method).toBe("PATCH");
+    expect(req.url).toContain("/posts/post-1");
+    const body = req.body as Record<string, unknown>;
+    expect(body.post).toEqual({ body: "Updated" });
+    expect(body.profiles).toBeUndefined();
+    expect(body.media).toBeUndefined();
+  });
+
+  it("updates platform params only (no post fields)", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", {
+      platforms: { youtube: { privacy_status: "unlisted" } },
+    });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.post).toBeUndefined();
+    expect(body.platforms).toEqual({
+      youtube: { privacy_status: "unlisted" },
+    });
+  });
+
+  it("replaces profiles and media on update", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", {
+      profiles: ["twitter", "threads"],
+      media: ["https://example.com/new.jpg"],
+    });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.profiles).toEqual(["twitter", "threads"]);
+    expect(body.media).toEqual(["https://example.com/new.jpg"]);
+  });
+
+  it("removes all media on update with empty array", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", { media: [] });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.media).toEqual([]);
+  });
+
+  it("replaces thread on update", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", {
+      thread: [{ body: "First reply" }, { body: "Second reply" }],
+    });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.thread).toEqual([
+      { body: "First reply" },
+      { body: "Second reply" },
+    ]);
+  });
+
+  it("updates scheduled_at with Date object", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", {
+      scheduledAt: new Date("2026-06-01T12:00:00Z"),
+    });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect((body.post as Record<string, unknown>).scheduled_at).toBe(
+      "2026-06-01T12:00:00.000Z",
+    );
+  });
+
+  it("toggles draft status on update", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", { draft: false });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect((body.post as Record<string, unknown>).draft).toBe(false);
+  });
+
+  it("assigns queue on update", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", {
+      queueId: "queue-1",
+      queuePriority: "high",
+    });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.queue_id).toBe("queue-1");
+    expect(body.queue_priority).toBe("high");
+  });
+
   it("deletes a post", async () => {
     const { client, getRequests } = createMockClient({
       responseBody: { deleted: true },

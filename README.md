@@ -118,6 +118,34 @@ const post = await client.posts.create(
 // Publish a draft
 const post = await client.posts.publishDraft("post-id");
 
+// Update a post (only drafts and scheduled posts >5min before publish)
+// All fields are optional — send only what you want to change
+const updated = await client.posts.update("post-id", {
+  body: "Updated content",
+});
+
+// Update platform params only (merged with existing)
+await client.posts.update("post-id", {
+  platforms: { youtube: { privacy_status: "unlisted" } },
+});
+
+// Replace profiles and media (full replace)
+await client.posts.update("post-id", {
+  profiles: ["twitter", "threads"],
+  media: ["https://example.com/new.jpg"],
+});
+
+// Remove all media
+await client.posts.update("post-id", { media: [] });
+
+// Replace the thread
+await client.posts.update("post-id", {
+  thread: [
+    { body: "Updated first reply" },
+    { body: "Updated second reply", media: ["https://example.com/img.jpg"] },
+  ],
+});
+
 // Create a thread post
 const post = await client.posts.create(
   "Thread starts here",

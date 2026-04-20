@@ -218,6 +218,162 @@ export class PostsResource {
     })) as Post;
   }
 
+  async update(
+    id: string,
+    options: {
+      body?: string;
+      profiles?: string[];
+      media?: string[];
+      mediaFiles?: string[];
+      platforms?: PlatformParams;
+      thread?: ThreadChildInput[];
+      scheduledAt?: Date | string;
+      draft?: boolean;
+      queueId?: string;
+      queuePriority?: string;
+      profileGroupId?: string;
+    } = {},
+  ): Promise<Post> {
+    const {
+      body,
+      profiles,
+      media,
+      mediaFiles,
+      platforms,
+      thread,
+      scheduledAt,
+      draft,
+      queueId,
+      queuePriority,
+      profileGroupId,
+    } = options;
+
+    const hasThreadFiles = thread?.some(
+      (t) => t.mediaFiles && t.mediaFiles.length > 0,
+    );
+
+    // Use multipart form data for file uploads
+    if ((mediaFiles && mediaFiles.length > 0) || hasThreadFiles) {
+      const formData = new FormData();
+
+      if (body != null) formData.set("post[body]", body);
+
+      if (scheduledAt) {
+        formData.set(
+          "post[scheduled_at]",
+          scheduledAt instanceof Date
+            ? scheduledAt.toISOString()
+            : scheduledAt,
+        );
+      }
+
+      if (draft != null) {
+        formData.set("post[draft]", String(draft));
+      }
+
+      if (profiles) {
+        for (const profileId of profiles) {
+          formData.append("profiles[]", profileId);
+        }
+      }
+
+      if (queueId) {
+        formData.set("queue_id", queueId);
+      }
+
+      if (queuePriority) {
+        formData.set("queue_priority", queuePriority);
+      }
+
+      if (media) {
+        for (const url of media) {
+          formData.append("media[]", url);
+        }
+      }
+
+      if (platforms) {
+        for (const [platform, params] of Object.entries(platforms)) {
+          if (!params) continue;
+          for (const [key, value] of Object.entries(
+            params as Record<string, unknown>,
+          )) {
+            if (value == null) continue;
+            if (Array.isArray(value)) {
+              for (const item of value) {
+                formData.append(
+                  `platforms[${platform}][${key}][]`,
+                  String(item),
+                );
+              }
+            } else {
+              formData.set(`platforms[${platform}][${key}]`, String(value));
+            }
+          }
+        }
+      }
+
+      if (mediaFiles) {
+        for (const filePath of mediaFiles) {
+          const fileData = await readFile(filePath);
+          const fileName = basename(filePath);
+          const mimeType = getMimeType(filePath);
+          const blob = new Blob([fileData], { type: mimeType });
+          formData.append("media[]", blob, fileName);
+        }
+      }
+
+      if (thread) {
+        for (let i = 0; i < thread.length; i++) {
+          const child = thread[i];
+          formData.set(`thread[${i}][body]`, child.body);
+
+          if (child.media) {
+            for (const url of child.media) {
+              formData.append(`thread[${i}][media][]`, url);
+            }
+          }
+
+          if (child.mediaFiles) {
+            for (const filePath of child.mediaFiles) {
+              const fileData = await readFile(filePath);
+              const fileName = basename(filePath);
+              const mimeType = getMimeType(filePath);
+              const blob = new Blob([fileData], { type: mimeType });
+              formData.append(`thread[${i}][media][]`, blob, fileName);
+            }
+          }
+        }
+      }
+
+      return (await this.client.request("PATCH", `/posts/${id}`, {
+        formData,
+        profileGroupId,
+      })) as Post;
+    }
+
+    const postFields: Record<string, unknown> = {};
+    if (body != null) postFields.body = body;
+    if (scheduledAt) {
+      postFields.scheduled_at =
+        scheduledAt instanceof Date ? scheduledAt.toISOString() : scheduledAt;
+    }
+    if (draft != null) postFields.draft = draft;
+
+    const payload: Record<string, unknown> = {};
+    if (Object.keys(postFields).length > 0) payload.post = postFields;
+    if (profiles) payload.profiles = profiles;
+    if (media) payload.media = media;
+    if (platforms) payload.platforms = platforms;
+    if (thread) payload.thread = thread;
+    if (queueId) payload.queue_id = queueId;
+    if (queuePriority) payload.queue_priority = queuePriority;
+
+    return (await this.client.request("PATCH", `/posts/${id}`, {
+      json: payload,
+      profileGroupId,
+    })) as Post;
+  }
+
   async publishDraft(
     id: string,
     options: { profileGroupId?: string } = {},
