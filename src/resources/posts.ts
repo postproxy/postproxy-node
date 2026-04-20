@@ -112,6 +112,14 @@ export class PostsResource {
         formData.set("post[draft]", String(draft));
       }
 
+      if (queueId) {
+        formData.set("queue_id", queueId);
+      }
+
+      if (queuePriority) {
+        formData.set("queue_priority", queuePriority);
+      }
+
       // Add URL-based media for the parent post
       if (media) {
         for (const url of media) {
