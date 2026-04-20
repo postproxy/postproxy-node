@@ -118,6 +118,34 @@ const post = await client.posts.create(
 // Publish a draft
 const post = await client.posts.publishDraft("post-id");
 
+// Update a post (only drafts and scheduled posts >5min before publish)
+// All fields are optional — send only what you want to change
+const updated = await client.posts.update("post-id", {
+  body: "Updated content",
+});
+
+// Update platform params only (merged with existing)
+await client.posts.update("post-id", {
+  platforms: { youtube: { privacy_status: "unlisted" } },
+});
+
+// Replace profiles and media (full replace)
+await client.posts.update("post-id", {
+  profiles: ["twitter", "threads"],
+  media: ["https://example.com/new.jpg"],
+});
+
+// Remove all media
+await client.posts.update("post-id", { media: [] });
+
+// Replace the thread
+await client.posts.update("post-id", {
+  thread: [
+    { body: "Updated first reply" },
+    { body: "Updated second reply", media: ["https://example.com/img.jpg"] },
+  ],
+});
+
 // Create a thread post
 const post = await client.posts.create(
   "Thread starts here",
@@ -134,6 +162,19 @@ console.log(post.thread); // ThreadChild[]
 // Delete a post
 const result = await client.posts.delete("post-id");
 console.log(result.deleted); // true
+
+// Delete a post and also remove it from social platforms
+const result = await client.posts.delete("post-id", { deleteOnPlatform: true });
+
+// Delete from platforms only (keeps DB record). Defaults to all platforms.
+const r1 = await client.posts.deleteOnPlatform("post-id");
+// Target a single network
+const r2 = await client.posts.deleteOnPlatform("post-id", { network: "twitter" });
+// Target a specific profile
+const r3 = await client.posts.deleteOnPlatform("post-id", { profileId: "prof-abc" });
+// Target a specific post profile (covers entire thread for that profile)
+const r4 = await client.posts.deleteOnPlatform("post-id", { postProfileId: "pp-abc" });
+console.log(r1.deleting); // [{ post_profile_id, platform }]
 
 // Get stats for posts
 const stats = await client.posts.stats(["post-id-1", "post-id-2"]);
@@ -407,7 +448,7 @@ Key types:
 | `InstagramParams` | format (`post`, `reel`, `story`), first_comment, collaborators, cover_url, audio_name, trial_strategy, thumb_offset |
 | `TikTokParams` | format (`video`, `image`), privacy_status, photo_cover_index, auto_add_music, made_with_ai, disable_comment, disable_duet, disable_stitch, brand_content_toggle, brand_organic_toggle |
 | `LinkedInParams` | format (`post`), organization_id |
-| `YouTubeParams` | format (`post`), title, privacy_status, cover_url |
+| `YouTubeParams` | format (`post`), title, privacy_status, cover_url, made_for_kids, tags, category_id, contains_synthetic_media |
 | `PinterestParams` | format (`pin`), title, board_id, destination_link, cover_url, thumb_offset |
 | `ThreadsParams` | format (`post`) |
 | `TwitterParams` | format (`post`) |

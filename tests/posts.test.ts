@@ -272,6 +272,114 @@ describe("Posts Resource", () => {
     expect(post.thread![0].body).toBe("Reply");
   });
 
+  it("updates a post body", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { ...MOCK_POST, body: "Updated" },
+    });
+    const post = await client.posts.update("post-1", { body: "Updated" });
+
+    expect(post.body).toBe("Updated");
+    const req = getRequests()[0];
+    expect(req.method).toBe("PATCH");
+    expect(req.url).toContain("/posts/post-1");
+    const body = req.body as Record<string, unknown>;
+    expect(body.post).toEqual({ body: "Updated" });
+    expect(body.profiles).toBeUndefined();
+    expect(body.media).toBeUndefined();
+  });
+
+  it("updates platform params only (no post fields)", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", {
+      platforms: { youtube: { privacy_status: "unlisted" } },
+    });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.post).toBeUndefined();
+    expect(body.platforms).toEqual({
+      youtube: { privacy_status: "unlisted" },
+    });
+  });
+
+  it("replaces profiles and media on update", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", {
+      profiles: ["twitter", "threads"],
+      media: ["https://example.com/new.jpg"],
+    });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.profiles).toEqual(["twitter", "threads"]);
+    expect(body.media).toEqual(["https://example.com/new.jpg"]);
+  });
+
+  it("removes all media on update with empty array", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", { media: [] });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.media).toEqual([]);
+  });
+
+  it("replaces thread on update", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", {
+      thread: [{ body: "First reply" }, { body: "Second reply" }],
+    });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.thread).toEqual([
+      { body: "First reply" },
+      { body: "Second reply" },
+    ]);
+  });
+
+  it("updates scheduled_at with Date object", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", {
+      scheduledAt: new Date("2026-06-01T12:00:00Z"),
+    });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect((body.post as Record<string, unknown>).scheduled_at).toBe(
+      "2026-06-01T12:00:00.000Z",
+    );
+  });
+
+  it("toggles draft status on update", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", { draft: false });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect((body.post as Record<string, unknown>).draft).toBe(false);
+  });
+
+  it("assigns queue on update", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.update("post-1", {
+      queueId: "queue-1",
+      queuePriority: "high",
+    });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.queue_id).toBe("queue-1");
+    expect(body.queue_priority).toBe("high");
+  });
+
   it("deletes a post", async () => {
     const { client, getRequests } = createMockClient({
       responseBody: { deleted: true },
@@ -279,5 +387,63 @@ describe("Posts Resource", () => {
     const result = await client.posts.delete("post-1");
     expect(result.deleted).toBe(true);
     expect(getRequests()[0].method).toBe("DELETE");
+  });
+
+  it("deletes a post with delete_on_platform=true", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { deleted: true },
+    });
+    const result = await client.posts.delete("post-1", {
+      deleteOnPlatform: true,
+    });
+    expect(result.deleted).toBe(true);
+    const req = getRequests()[0];
+    expect(req.method).toBe("DELETE");
+    expect(req.url).toContain("delete_on_platform=true");
+  });
+
+  it("deletes post from all platforms", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: {
+        success: true,
+        deleting: [{ post_profile_id: "pp-1", platform: "twitter" }],
+      },
+    });
+    const result = await client.posts.deleteOnPlatform("post-1");
+    expect(result.success).toBe(true);
+    expect(result.deleting).toHaveLength(1);
+    expect(result.deleting[0].platform).toBe("twitter");
+
+    const req = getRequests()[0];
+    expect(req.method).toBe("POST");
+    expect(req.url).toContain("/posts/post-1/delete_on_platform");
+    expect(req.body).toBeNull();
+  });
+
+  it("deletes post from platform by network", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { success: true, deleting: [] },
+    });
+    await client.posts.deleteOnPlatform("post-1", { network: "twitter" });
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.network).toBe("twitter");
+  });
+
+  it("deletes post from platform by profile_id", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { success: true, deleting: [] },
+    });
+    await client.posts.deleteOnPlatform("post-1", { profileId: "prof-1" });
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.profile_id).toBe("prof-1");
+  });
+
+  it("deletes post from platform by post_profile_id", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { success: true, deleting: [] },
+    });
+    await client.posts.deleteOnPlatform("post-1", { postProfileId: "pp-1" });
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.post_profile_id).toBe("pp-1");
   });
 });

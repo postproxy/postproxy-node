@@ -5,6 +5,7 @@ import type {
   Post,
   PaginatedResponse,
   DeleteResponse,
+  DeleteOnPlatformResponse,
   PlatformParams,
   StatsResponse,
   ThreadChildInput,
@@ -112,6 +113,14 @@ export class PostsResource {
         formData.set("post[draft]", String(draft));
       }
 
+      if (queueId) {
+        formData.set("queue_id", queueId);
+      }
+
+      if (queuePriority) {
+        formData.set("queue_priority", queuePriority);
+      }
+
       // Add URL-based media for the parent post
       if (media) {
         for (const url of media) {
@@ -210,6 +219,162 @@ export class PostsResource {
     })) as Post;
   }
 
+  async update(
+    id: string,
+    options: {
+      body?: string;
+      profiles?: string[];
+      media?: string[];
+      mediaFiles?: string[];
+      platforms?: PlatformParams;
+      thread?: ThreadChildInput[];
+      scheduledAt?: Date | string;
+      draft?: boolean;
+      queueId?: string;
+      queuePriority?: string;
+      profileGroupId?: string;
+    } = {},
+  ): Promise<Post> {
+    const {
+      body,
+      profiles,
+      media,
+      mediaFiles,
+      platforms,
+      thread,
+      scheduledAt,
+      draft,
+      queueId,
+      queuePriority,
+      profileGroupId,
+    } = options;
+
+    const hasThreadFiles = thread?.some(
+      (t) => t.mediaFiles && t.mediaFiles.length > 0,
+    );
+
+    // Use multipart form data for file uploads
+    if ((mediaFiles && mediaFiles.length > 0) || hasThreadFiles) {
+      const formData = new FormData();
+
+      if (body != null) formData.set("post[body]", body);
+
+      if (scheduledAt) {
+        formData.set(
+          "post[scheduled_at]",
+          scheduledAt instanceof Date
+            ? scheduledAt.toISOString()
+            : scheduledAt,
+        );
+      }
+
+      if (draft != null) {
+        formData.set("post[draft]", String(draft));
+      }
+
+      if (profiles) {
+        for (const profileId of profiles) {
+          formData.append("profiles[]", profileId);
+        }
+      }
+
+      if (queueId) {
+        formData.set("queue_id", queueId);
+      }
+
+      if (queuePriority) {
+        formData.set("queue_priority", queuePriority);
+      }
+
+      if (media) {
+        for (const url of media) {
+          formData.append("media[]", url);
+        }
+      }
+
+      if (platforms) {
+        for (const [platform, params] of Object.entries(platforms)) {
+          if (!params) continue;
+          for (const [key, value] of Object.entries(
+            params as Record<string, unknown>,
+          )) {
+            if (value == null) continue;
+            if (Array.isArray(value)) {
+              for (const item of value) {
+                formData.append(
+                  `platforms[${platform}][${key}][]`,
+                  String(item),
+                );
+              }
+            } else {
+              formData.set(`platforms[${platform}][${key}]`, String(value));
+            }
+          }
+        }
+      }
+
+      if (mediaFiles) {
+        for (const filePath of mediaFiles) {
+          const fileData = await readFile(filePath);
+          const fileName = basename(filePath);
+          const mimeType = getMimeType(filePath);
+          const blob = new Blob([fileData], { type: mimeType });
+          formData.append("media[]", blob, fileName);
+        }
+      }
+
+      if (thread) {
+        for (let i = 0; i < thread.length; i++) {
+          const child = thread[i];
+          formData.set(`thread[${i}][body]`, child.body);
+
+          if (child.media) {
+            for (const url of child.media) {
+              formData.append(`thread[${i}][media][]`, url);
+            }
+          }
+
+          if (child.mediaFiles) {
+            for (const filePath of child.mediaFiles) {
+              const fileData = await readFile(filePath);
+              const fileName = basename(filePath);
+              const mimeType = getMimeType(filePath);
+              const blob = new Blob([fileData], { type: mimeType });
+              formData.append(`thread[${i}][media][]`, blob, fileName);
+            }
+          }
+        }
+      }
+
+      return (await this.client.request("PATCH", `/posts/${id}`, {
+        formData,
+        profileGroupId,
+      })) as Post;
+    }
+
+    const postFields: Record<string, unknown> = {};
+    if (body != null) postFields.body = body;
+    if (scheduledAt) {
+      postFields.scheduled_at =
+        scheduledAt instanceof Date ? scheduledAt.toISOString() : scheduledAt;
+    }
+    if (draft != null) postFields.draft = draft;
+
+    const payload: Record<string, unknown> = {};
+    if (Object.keys(postFields).length > 0) payload.post = postFields;
+    if (profiles) payload.profiles = profiles;
+    if (media) payload.media = media;
+    if (platforms) payload.platforms = platforms;
+    if (thread) payload.thread = thread;
+    if (queueId) payload.queue_id = queueId;
+    if (queuePriority) payload.queue_priority = queuePriority;
+
+    return (await this.client.request("PATCH", `/posts/${id}`, {
+      json: payload,
+      profileGroupId,
+    })) as Post;
+  }
+
   async publishDraft(
     id: string,
     options: { profileGroupId?: string } = {},
@@ -252,10 +417,39 @@ export class PostsResource {
 
   async delete(
     id: string,
-    options: { profileGroupId?: string } = {},
+    options: { deleteOnPlatform?: boolean; profileGroupId?: string } = {},
   ): Promise<DeleteResponse> {
+    const params: Record<string, string> = {};
+    if (options.deleteOnPlatform != null) {
+      params.delete_on_platform = String(options.deleteOnPlatform);
+    }
     return (await this.client.request("DELETE", `/posts/${id}`, {
+      params: Object.keys(params).length > 0 ? params : undefined,
       profileGroupId: options.profileGroupId,
     })) as DeleteResponse;
+  }
+
+  async deleteOnPlatform(
+    id: string,
+    options: {
+      postProfileId?: string;
+      profileId?: string;
+      network?: string;
+      profileGroupId?: string;
+    } = {},
+  ): Promise<DeleteOnPlatformResponse> {
+    const payload: Record<string, unknown> = {};
+    if (options.postProfileId) payload.post_profile_id = options.postProfileId;
+    if (options.profileId) payload.profile_id = options.profileId;
+    if (options.network) payload.network = options.network;
+
+    return (await this.client.request(
+      "POST",
+      `/posts/${id}/delete_on_platform`,
+      {
+        json: Object.keys(payload).length > 0 ? payload : undefined,
+        profileGroupId: options.profileGroupId,
+      },
+    )) as DeleteOnPlatformResponse;
   }
 }
