@@ -133,6 +133,16 @@ export interface DeleteResponse {
   deleted: boolean;
 }
 
+export interface DeletingPlatform {
+  post_profile_id: string;
+  platform: Platform;
+}
+
+export interface DeleteOnPlatformResponse {
+  success: boolean;
+  deleting: DeletingPlatform[];
+}
+
 export interface SuccessResponse {
   success: boolean;
 }

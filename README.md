@@ -163,6 +163,19 @@ console.log(post.thread); // ThreadChild[]
 const result = await client.posts.delete("post-id");
 console.log(result.deleted); // true
 
+// Delete a post and also remove it from social platforms
+const result = await client.posts.delete("post-id", { deleteOnPlatform: true });
+
+// Delete from platforms only (keeps DB record). Defaults to all platforms.
+const r1 = await client.posts.deleteOnPlatform("post-id");
+// Target a single network
+const r2 = await client.posts.deleteOnPlatform("post-id", { network: "twitter" });
+// Target a specific profile
+const r3 = await client.posts.deleteOnPlatform("post-id", { profileId: "prof-abc" });
+// Target a specific post profile (covers entire thread for that profile)
+const r4 = await client.posts.deleteOnPlatform("post-id", { postProfileId: "pp-abc" });
+console.log(r1.deleting); // [{ post_profile_id, platform }]
+
 // Get stats for posts
 const stats = await client.posts.stats(["post-id-1", "post-id-2"]);
 for (const [postId, postStats] of Object.entries(stats.data)) {

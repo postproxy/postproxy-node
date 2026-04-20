@@ -5,6 +5,7 @@ import type {
   Post,
   PaginatedResponse,
   DeleteResponse,
+  DeleteOnPlatformResponse,
   PlatformParams,
   StatsResponse,
   ThreadChildInput,
@@ -416,10 +417,39 @@ export class PostsResource {
 
   async delete(
     id: string,
-    options: { profileGroupId?: string } = {},
+    options: { deleteOnPlatform?: boolean; profileGroupId?: string } = {},
   ): Promise<DeleteResponse> {
+    const params: Record<string, string> = {};
+    if (options.deleteOnPlatform != null) {
+      params.delete_on_platform = String(options.deleteOnPlatform);
+    }
     return (await this.client.request("DELETE", `/posts/${id}`, {
+      params: Object.keys(params).length > 0 ? params : undefined,
       profileGroupId: options.profileGroupId,
     })) as DeleteResponse;
+  }
+
+  async deleteOnPlatform(
+    id: string,
+    options: {
+      postProfileId?: string;
+      profileId?: string;
+      network?: string;
+      profileGroupId?: string;
+    } = {},
+  ): Promise<DeleteOnPlatformResponse> {
+    const payload: Record<string, unknown> = {};
+    if (options.postProfileId) payload.post_profile_id = options.postProfileId;
+    if (options.profileId) payload.profile_id = options.profileId;
+    if (options.network) payload.network = options.network;
+
+    return (await this.client.request(
+      "POST",
+      `/posts/${id}/delete_on_platform`,
+      {
+        json: Object.keys(payload).length > 0 ? payload : undefined,
+        profileGroupId: options.profileGroupId,
+      },
+    )) as DeleteOnPlatformResponse;
   }
 }

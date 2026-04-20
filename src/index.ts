@@ -42,6 +42,8 @@ export type {
   ListResponse,
   PaginatedResponse,
   DeleteResponse,
+  DeletingPlatform,
+  DeleteOnPlatformResponse,
   SuccessResponse,
   ConnectionResponse,
   FacebookParams,
