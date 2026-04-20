@@ -44,11 +44,19 @@ export interface Insights {
   on: string | null;
 }
 
+export interface ErrorDetails {
+  platform_error_code: string | null;
+  platform_error_subcode: string | null;
+  platform_error_message: string | null;
+  postproxy_note: string | null;
+}
+
 export interface PlatformResult {
   platform: Platform;
   status: PlatformPostStatus;
   params: Record<string, unknown> | null;
   error: string | null;
+  error_details: ErrorDetails | null;
   attempted_at: string | null;
   insights: Insights | null;
 }

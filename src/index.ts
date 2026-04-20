@@ -33,6 +33,7 @@ export type {
   ProfileGroup,
   Placement,
   Insights,
+  ErrorDetails,
   Media,
   PlatformResult,
   ThreadChild,
