@@ -12,8 +12,12 @@ import type {
   PinterestFormat,
   ThreadsFormat,
   TwitterFormat,
+  BlueskyFormat,
+  TelegramFormat,
   TikTokPrivacy,
   YouTubePrivacy,
+  TelegramParseMode,
+  WebhookEventType,
 } from "./constants";
 
 // --- Response Models ---
@@ -147,15 +151,41 @@ export interface SuccessResponse {
   success: boolean;
 }
 
-export interface ConnectionResponse {
+// --- Connection Models ---
+
+export interface OAuthConnectionResponse {
   url: string;
   success: boolean;
 }
 
+export interface SyncProfile {
+  id: string;
+  network: Platform;
+  name: string;
+  external_username: string | null;
+}
+
+export interface BlueskyConnectionResponse {
+  success: boolean;
+  profile: SyncProfile;
+}
+
+export interface TelegramConnectionResponse {
+  success: boolean;
+  profile: SyncProfile;
+  next_step?: string;
+}
+
+// Generic shape returned by initializeConnection — caller narrows by `platform`.
+export type ConnectionResponse =
+  | OAuthConnectionResponse
+  | BlueskyConnectionResponse
+  | TelegramConnectionResponse;
+
 // --- Stats Models ---
 
 export interface StatsRecord {
-  stats: Record<string, number>;
+  stats: Record<string, number | string | null>;
   recorded_at: string;
 }
 
@@ -171,6 +201,17 @@ export interface PostStats {
 
 export interface StatsResponse {
   data: Record<string, PostStats>;
+}
+
+export interface ProfileStats {
+  profile_id: string;
+  platform: Platform;
+  placement_id: string | null;
+  records: StatsRecord[];
+}
+
+export interface ProfileStatsResponse {
+  data: ProfileStats;
 }
 
 // --- Comment Models ---
@@ -220,6 +261,113 @@ export interface WebhookDelivery {
   attempted_at: string;
   created_at: string;
 }
+
+// --- Webhook Event Payloads ---
+
+export interface PostProcessedData {
+  id: string;
+  body: string;
+  status: PostStatus;
+  scheduled_at: string | null;
+  created_at: string;
+  platforms: { id: string; platform: Platform; name: string }[];
+}
+
+export interface PostImportedData {
+  id: string;
+  body: string;
+  source: "imported";
+  posted_at: string | null;
+  created_at: string;
+  platform: Platform;
+  profile: { id: string; name: string; platform: Platform };
+  platform_post_id: string;
+  public_id: string | null;
+}
+
+export interface PlatformPostData {
+  id: string;
+  post_id: string;
+  platform: Platform;
+  profile_id: string;
+  profile_name: string;
+  status: PlatformPostStatus;
+  error: string | null;
+  error_details: ErrorDetails | null;
+  platform_id: string | null;
+}
+
+export interface PlatformPostInsightsData extends PlatformPostData {
+  insights: Record<string, number | string | null>;
+}
+
+export interface ProfileEventData {
+  id: string;
+  name: string;
+  platform: Platform;
+  profile_group_id: string;
+  status: "active" | "disconnected";
+  uid: string;
+  username: string | null;
+}
+
+export interface ProfileStatsData {
+  profile_id: string;
+  platform: Platform;
+  placement_id: string | null;
+  stats: Record<string, number | string | null>;
+  recorded_at: string;
+}
+
+export interface MediaFailedData {
+  id: string;
+  post_id: string;
+  content_type: string;
+  status: "failed";
+  error_message: string;
+}
+
+export interface CommentCreatedData {
+  id: string;
+  post_id: string;
+  platform_post_id: string;
+  platform: Platform;
+  external_id: string | null;
+  parent_external_id: string | null;
+  body: string;
+  status: string;
+  author_external_id: string | null;
+  author_name: string | null;
+  author_username: string | null;
+  author_avatar_url: string | null;
+  like_count: number;
+  reply_count: number;
+  is_hidden: boolean;
+  permalink: string | null;
+  platform_data: Record<string, unknown> | null;
+  posted_at: string | null;
+  created_at: string;
+}
+
+interface BaseWebhookEvent<T extends WebhookEventType, D> {
+  id: string;
+  type: T;
+  created_at: string;
+  data: D;
+}
+
+export type WebhookEvent =
+  | BaseWebhookEvent<"post.processed", PostProcessedData>
+  | BaseWebhookEvent<"post.imported", PostImportedData>
+  | BaseWebhookEvent<"platform_post.published", PlatformPostData>
+  | BaseWebhookEvent<"platform_post.failed", PlatformPostData>
+  | BaseWebhookEvent<"platform_post.failed_waiting_for_retry", PlatformPostData>
+  | BaseWebhookEvent<"platform_post.insights", PlatformPostInsightsData>
+  | BaseWebhookEvent<"profile.connected", ProfileEventData>
+  | BaseWebhookEvent<"profile.disconnected", ProfileEventData>
+  | BaseWebhookEvent<"profile.stats", ProfileStatsData>
+  | BaseWebhookEvent<"media.failed", MediaFailedData>
+  | BaseWebhookEvent<"comment.created", CommentCreatedData>;
 
 // --- Platform Parameter Models ---
 
@@ -286,6 +434,18 @@ export interface TwitterParams {
   format?: TwitterFormat;
 }
 
+export interface BlueskyParams {
+  format?: BlueskyFormat;
+}
+
+export interface TelegramParams {
+  format?: TelegramFormat;
+  chat_id: string;
+  parse_mode?: TelegramParseMode;
+  disable_link_preview?: boolean;
+  disable_notification?: boolean;
+}
+
 export interface PlatformParams {
   facebook?: FacebookParams;
   instagram?: InstagramParams;
@@ -295,4 +455,6 @@ export interface PlatformParams {
   pinterest?: PinterestParams;
   threads?: ThreadsParams;
   twitter?: TwitterParams;
+  bluesky?: BlueskyParams;
+  telegram?: TelegramParams;
 }

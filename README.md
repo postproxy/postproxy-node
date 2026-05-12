@@ -239,6 +239,38 @@ const isValid = verifySignature(
 );
 ```
 
+#### Event types and typed payloads
+
+Subscribe to any of these events (or pass `["*"]` for all):
+
+`post.processed`, `post.imported`, `platform_post.published`, `platform_post.failed`, `platform_post.failed_waiting_for_retry`, `platform_post.insights`, `profile.connected`, `profile.disconnected`, `profile.stats`, `media.failed`, `comment.created`.
+
+`parseWebhookEvent` validates the envelope and returns a discriminated union — the `type` field narrows `data` to the right payload type:
+
+```typescript
+import { parseWebhookEvent, WebhookParseError } from "postproxy-sdk";
+
+try {
+  const event = parseWebhookEvent(requestBody);
+  switch (event.type) {
+    case "profile.stats":
+      console.log(event.data.profile_id, event.data.stats);
+      break;
+    case "platform_post.published":
+      console.log("Published:", event.data.platform_id);
+      break;
+    case "comment.created":
+      console.log(`${event.data.author_username}: ${event.data.body}`);
+      break;
+    // ... other cases are exhaustively typed
+  }
+} catch (e) {
+  if (e instanceof WebhookParseError) {
+    console.error("Bad webhook body:", e.message);
+  }
+}
+```
+
 ### Queues
 
 ```typescript
@@ -372,13 +404,55 @@ const group = await client.profileGroups.create("My New Group");
 const result = await client.profileGroups.delete("pg-id");
 console.log(result.deleted); // true
 
-// Initialize a social platform connection
+// Initialize a social platform OAuth connection
 const conn = await client.profileGroups.initializeConnection(
   "pg-id",
   "instagram",
   "https://yourapp.com/callback",
 );
-console.log(conn.url); // Redirect the user to this URL
+// For OAuth platforms the response is { url, success }; redirect the user to `url`.
+if ("url" in conn) console.log(conn.url);
+
+// Bluesky uses an app password (no OAuth). The response is synchronous.
+const bsky = await client.profileGroups.connectBluesky("pg-id", {
+  identifier: "yourname.bsky.social",
+  appPassword: "xxxx-xxxx-xxxx-xxxx",
+});
+console.log(bsky.profile.id);
+
+// Telegram is "bring your own bot" — submit a token from @BotFather, then
+// poll placements until the user adds the bot as administrator to a channel.
+const tg = await client.profileGroups.connectTelegram("pg-id", {
+  botToken: "123456789:ABCdef-GhIJklMnOpQrStUvWxYz",
+});
+console.log(tg.profile.id, tg.next_step);
+
+let placements: { id: string; name: string }[] = [];
+while (placements.length === 0) {
+  const result = await client.profiles.placements(tg.profile.id);
+  placements = result.data;
+  if (placements.length === 0) await new Promise((r) => setTimeout(r, 3000));
+}
+console.log("Channels:", placements);
+```
+
+### Profile stats
+
+Retrieve the per-profile stats timeseries. `placementId` is required for `facebook`, `linkedin`, and `telegram` profiles (channels/orgs each have their own series); omit it for other networks.
+
+```typescript
+// LinkedIn org — placement_id required
+const stats = await client.profiles.getProfileStats("prof_li_001", {
+  placementId: "108520199",
+  from: "2026-04-01T00:00:00Z",
+});
+for (const r of stats.data.records) {
+  console.log(r.recorded_at, r.stats.followerCount);
+}
+
+// Bluesky — no placements
+const bskyStats = await client.profiles.getProfileStats("prof_bsky_001");
+console.log(bskyStats.data.records.at(-1)?.stats.followersCount);
 ```
 
 ## Error handling
@@ -452,8 +526,12 @@ Key types:
 | `PinterestParams` | format (`pin`), title, board_id, destination_link, cover_url, thumb_offset |
 | `ThreadsParams` | format (`post`) |
 | `TwitterParams` | format (`post`) |
+| `BlueskyParams` | format (`post`) |
+| `TelegramParams` | format (`post`), chat_id (required), parse_mode (`HTML`, `MarkdownV2`), disable_link_preview, disable_notification |
 
-Wrap them in `PlatformParams` when passing to `posts.create()`.
+Wrap them in `PlatformParams` when passing to `posts.create()`. Telegram needs a `chat_id` per post — list available chats with `client.profiles.placements(profileId)`.
+
+Supported platforms: facebook, instagram, tiktok, linkedin, youtube, twitter, threads, pinterest, bluesky, telegram.
 
 ## Development
 

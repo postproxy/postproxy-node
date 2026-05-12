@@ -15,9 +15,15 @@ export {
   type PinterestFormat,
   type ThreadsFormat,
   type TwitterFormat,
+  type BlueskyFormat,
+  type TelegramFormat,
   type TikTokPrivacy,
   type YouTubePrivacy,
+  type TelegramParseMode,
+  type WebhookEventType,
+  WEBHOOK_EVENT_TYPES,
   BASE_URL,
+  VERSION,
 } from "./constants";
 
 export {
@@ -46,6 +52,10 @@ export type {
   DeleteOnPlatformResponse,
   SuccessResponse,
   ConnectionResponse,
+  OAuthConnectionResponse,
+  BlueskyConnectionResponse,
+  TelegramConnectionResponse,
+  SyncProfile,
   FacebookParams,
   InstagramParams,
   TikTokParams,
@@ -54,12 +64,25 @@ export type {
   PinterestParams,
   ThreadsParams,
   TwitterParams,
+  BlueskyParams,
+  TelegramParams,
   PlatformParams,
   StatsRecord,
   PlatformStats,
   PostStats,
+  ProfileStats,
+  ProfileStatsResponse,
   Webhook,
   WebhookDelivery,
+  WebhookEvent,
+  PostProcessedData,
+  PostImportedData,
+  PlatformPostData,
+  PlatformPostInsightsData,
+  ProfileEventData,
+  ProfileStatsData,
+  MediaFailedData,
+  CommentCreatedData,
   StatsResponse,
   Timeslot,
   Queue,
@@ -68,4 +91,4 @@ export type {
   AcceptedResponse,
 } from "./types";
 
-export { verifySignature } from "./webhooks";
+export { verifySignature, parseWebhookEvent, WebhookParseError } from "./webhooks";

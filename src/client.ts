@@ -1,4 +1,4 @@
-import { BASE_URL } from "./constants";
+import { BASE_URL, VERSION } from "./constants";
 import {
   PostProxyError,
   AuthenticationError,
@@ -72,6 +72,7 @@ export class PostProxy {
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.apiKey}`,
+      "User-Agent": `postproxy-node/${VERSION} (node/${process.version})`,
     };
 
     let body: string | FormData | undefined;
