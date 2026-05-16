@@ -363,6 +363,35 @@ await client.comments.like("post-id", "comment-id", "profile-id");
 await client.comments.unlike("post-id", "comment-id", "profile-id");
 ```
 
+### Profile comments (Google Business reviews)
+
+Profile-level comments expose Google Business reviews and replies. Reviews are user-generated — the SDK lets you list/get them and reply to or delete your own replies. Reviews sync twice daily.
+
+```typescript
+// List reviews for a profile (paginated)
+const reviews = await client.profileComments.list("profile-id");
+for (const review of reviews.data) {
+  console.log(review.author_username, review.platform_data?.star_rating, review.body);
+  for (const reply of review.replies) {
+    console.log(`  reply: ${reply.body}`);
+  }
+}
+
+// Filter by placement (location)
+const reviews = await client.profileComments.list("profile-id", {
+  placementId: "accounts/123/locations/456",
+});
+
+// Get a single review
+const review = await client.profileComments.get("profile-id", "review-id");
+
+// Reply to a review (parent_id is the review id)
+const reply = await client.profileComments.create("profile-id", "review-id", "Thanks for visiting!");
+
+// Delete your reply
+await client.profileComments.delete("profile-id", "reply-id");
+```
+
 ### Profiles
 
 ```typescript
@@ -531,7 +560,29 @@ Key types:
 
 Wrap them in `PlatformParams` when passing to `posts.create()`. Telegram needs a `chat_id` per post — list available chats with `client.profiles.placements(profileId)`.
 
-Supported platforms: facebook, instagram, tiktok, linkedin, youtube, twitter, threads, pinterest, bluesky, telegram.
+Supported platforms: facebook, instagram, tiktok, linkedin, youtube, twitter, threads, pinterest, bluesky, telegram, google_business.
+
+#### Google Business
+
+Google Business posts use the `google_business` key on `PlatformParams`. Pass the location resource path returned by `client.profiles.placements()` as `location_id`. Supported formats: `standard`, `event`, `offer`. CTA actions: `LEARN_MORE`, `BOOK`, `ORDER`, `SHOP`, `SIGN_UP`, `CALL`. Media is limited to one image (≤5 MB).
+
+```typescript
+await client.posts.create(
+  "Now open weekends!",
+  ["gbp-profile-id"],
+  {
+    media: ["https://example.com/store.jpg"],
+    platforms: {
+      google_business: {
+        format: "standard",
+        location_id: "accounts/123/locations/456",
+        cta_action_type: "LEARN_MORE",
+        cta_url: "https://example.com",
+      },
+    },
+  },
+);
+```
 
 ## Development
 

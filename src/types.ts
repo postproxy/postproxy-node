@@ -65,6 +65,13 @@ export interface PlatformResult {
   insights: Insights | null;
 }
 
+export interface MediaPlatformError {
+  platform: Platform;
+  status: PlatformPostStatus;
+  error: string | null;
+  error_details: ErrorDetails | null;
+}
+
 export interface Media {
   id: string;
   status: MediaStatus;
@@ -72,6 +79,7 @@ export interface Media {
   content_type: string;
   source_url: string | null;
   url: string | null;
+  platforms?: MediaPlatformError[];
 }
 
 export interface ThreadChild {
@@ -215,6 +223,21 @@ export interface ProfileStatsResponse {
 }
 
 // --- Comment Models ---
+
+export interface ProfileComment {
+  id: string;
+  external_id: string;
+  parent_external_id: string | null;
+  placement_id: string;
+  body: string;
+  status: string;
+  author_username: string | null;
+  author_avatar_url: string | null;
+  platform_data: Record<string, unknown> | null;
+  posted_at: string;
+  created_at: string;
+  replies: ProfileComment[];
+}
 
 export interface Comment {
   id: string;
@@ -457,4 +480,5 @@ export interface PlatformParams {
   twitter?: TwitterParams;
   bluesky?: BlueskyParams;
   telegram?: TelegramParams;
+  google_business?: Record<string, unknown>;
 }

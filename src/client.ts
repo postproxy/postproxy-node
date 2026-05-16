@@ -12,6 +12,7 @@ import { ProfileGroupsResource } from "./resources/profile-groups";
 import { WebhooksResource } from "./resources/webhooks";
 import { QueuesResource } from "./resources/queues";
 import { CommentsResource } from "./resources/comments";
+import { ProfileCommentsResource } from "./resources/profile-comments";
 
 export interface PostProxyOptions {
   baseUrl?: string;
@@ -29,6 +30,7 @@ export class PostProxy {
   readonly webhooks: WebhooksResource;
   readonly queues: QueuesResource;
   readonly comments: CommentsResource;
+  readonly profileComments: ProfileCommentsResource;
 
   constructor(apiKey: string, options: PostProxyOptions = {}) {
     this.apiKey = apiKey;
@@ -41,6 +43,7 @@ export class PostProxy {
     this.webhooks = new WebhooksResource(this);
     this.queues = new QueuesResource(this);
     this.comments = new CommentsResource(this);
+    this.profileComments = new ProfileCommentsResource(this);
   }
 
   async request(

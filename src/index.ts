@@ -88,6 +88,8 @@ export type {
   Queue,
   NextSlotResponse,
   Comment,
+  ProfileComment,
+  MediaPlatformError,
   AcceptedResponse,
 } from "./types";
 

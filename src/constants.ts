@@ -1,6 +1,6 @@
 export const BASE_URL = "https://api.postproxy.dev";
 
-export const VERSION = "1.8.0";
+export const VERSION = "1.9.0";
 
 export type Platform =
   | "facebook"
@@ -12,7 +12,8 @@ export type Platform =
   | "threads"
   | "pinterest"
   | "bluesky"
-  | "telegram";
+  | "telegram"
+  | "google_business";
 
 export type ProfileStatus = "active" | "expired" | "inactive";
 
