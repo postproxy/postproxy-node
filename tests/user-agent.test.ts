@@ -26,6 +26,6 @@ describe("User-Agent header", () => {
   });
 
   it("VERSION constant is the bumped value", () => {
-    expect(VERSION).toBe("1.8.0");
+    expect(VERSION).toBe("1.10.0");
   });
 });

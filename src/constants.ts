@@ -1,6 +1,6 @@
 export const BASE_URL = "https://api.postproxy.dev";
 
-export const VERSION = "1.9.0";
+export const VERSION = "1.10.0";
 
 export type Platform =
   | "facebook"
@@ -55,6 +55,15 @@ export type YouTubePrivacy = "public" | "unlisted" | "private";
 
 export type TelegramParseMode = "HTML" | "MarkdownV2";
 
+export type MessageDirection = "inbound" | "outbound";
+
+export type MessageStatus =
+  | "pending"
+  | "published"
+  | "failed_waiting_for_retry"
+  | "failed"
+  | "received";
+
 export const WEBHOOK_EVENT_TYPES = [
   "post.processed",
   "post.imported",
@@ -67,6 +76,16 @@ export const WEBHOOK_EVENT_TYPES = [
   "profile.stats",
   "media.failed",
   "comment.created",
+  "profile_comment.created",
+  "message.received",
+  "message.sent",
+  "message.delivered",
+  "message.read",
+  "message.edited",
+  "message.deleted",
+  "message.failed_waiting_for_retry",
+  "message.failed",
+  "reaction.received",
 ] as const;
 
 export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number];

@@ -9,6 +9,10 @@ import type {
   ProfileStatsData,
   MediaFailedData,
   CommentCreatedData,
+  Message,
+  MessageEventData,
+  ReactionEventData,
+  ProfileCommentCreatedData,
 } from "../src/index.js";
 
 const envelope = <T>(type: string, data: T) => ({
@@ -16,6 +20,31 @@ const envelope = <T>(type: string, data: T) => ({
   type,
   created_at: "2026-05-12T00:00:00Z",
   data,
+});
+
+const mockMessage = (overrides: Partial<Message> = {}): Message => ({
+  id: "msg_1",
+  chat_id: "chat_1",
+  external_id: "mid.1",
+  direction: "inbound",
+  body: "hi",
+  status: "received",
+  tag: null,
+  external_comment_id: null,
+  error_message: null,
+  platform_data: null,
+  external_posted_at: null,
+  external_delivered_at: null,
+  external_read_at: null,
+  external_edited_at: null,
+  reply_to_external_id: null,
+  reply_markup: null,
+  external_deleted_at: null,
+  reactions: [],
+  attachments: [],
+  is_unsupported: false,
+  created_at: "2026-06-01T00:00:00Z",
+  ...overrides,
 });
 
 describe("parseWebhookEvent", () => {
@@ -185,6 +214,84 @@ describe("parseWebhookEvent", () => {
     );
     if (e.type !== "comment.created") throw new Error("wrong narrowing");
     expect(e.data.author_name).toBe("Jane");
+  });
+
+  it("parses all message.* events", () => {
+    const types = [
+      "message.received",
+      "message.sent",
+      "message.delivered",
+      "message.read",
+      "message.edited",
+      "message.deleted",
+      "message.failed_waiting_for_retry",
+      "message.failed",
+    ] as const;
+    for (const type of types) {
+      const e = parseWebhookEvent(
+        envelope<MessageEventData>(type, { message: mockMessage() }),
+      );
+      expect(e.type).toBe(type);
+      if (
+        e.type === "message.received" ||
+        e.type === "message.sent" ||
+        e.type === "message.delivered" ||
+        e.type === "message.read" ||
+        e.type === "message.edited" ||
+        e.type === "message.deleted" ||
+        e.type === "message.failed_waiting_for_retry" ||
+        e.type === "message.failed"
+      ) {
+        expect(e.data.message.id).toBe("msg_1");
+      }
+    }
+  });
+
+  it("parses reaction.received", () => {
+    const e = parseWebhookEvent(
+      envelope<ReactionEventData>("reaction.received", {
+        message: mockMessage({
+          reactions: [
+            {
+              sender_external_id: "psid_123",
+              emoji: "❤️",
+              reaction: "love",
+              at: "2026-06-01T15:02:00Z",
+            },
+          ],
+        }),
+        sender_external_id: "psid_123",
+        action: "react",
+        reaction: "love",
+        emoji: "❤️",
+        occurred_at: "2026-06-01T15:02:00Z",
+      }),
+    );
+    if (e.type !== "reaction.received") throw new Error("wrong narrowing");
+    expect(e.data.action).toBe("react");
+    expect(e.data.message.reactions[0].reaction).toBe("love");
+  });
+
+  it("parses profile_comment.created", () => {
+    const e = parseWebhookEvent(
+      envelope<ProfileCommentCreatedData>("profile_comment.created", {
+        id: "abc123",
+        profile_id: "prof123",
+        platform: "google_business",
+        placement_id: "accounts/1/locations/2",
+        external_id: "accounts/1/locations/2/reviews/A",
+        parent_external_id: null,
+        body: "Great coffee!",
+        status: "synced",
+        author_username: "Jane D.",
+        author_avatar_url: null,
+        platform_data: { star_rating: 5 },
+        posted_at: "2026-05-10T11:55:00Z",
+        created_at: "2026-05-13T18:00:00Z",
+      }),
+    );
+    if (e.type !== "profile_comment.created") throw new Error("wrong narrowing");
+    expect(e.data.platform_data?.star_rating).toBe(5);
   });
 
   it("throws on unknown event type", () => {

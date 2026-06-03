@@ -1,5 +1,10 @@
 import type { PostProxy } from "../client";
-import type { Comment, PaginatedResponse, AcceptedResponse } from "../types";
+import type {
+  Comment,
+  Message,
+  PaginatedResponse,
+  AcceptedResponse,
+} from "../types";
 
 export class CommentsResource {
   private client: PostProxy;
@@ -171,5 +176,29 @@ export class CommentsResource {
         profileGroupId: options.profileGroupId,
       },
     )) as AcceptedResponse;
+  }
+
+  // Send a direct message in reply to a comment's author (Instagram/Facebook).
+  // Returns a Message (not a Comment).
+  async privateReply(
+    postId: string,
+    commentId: string,
+    profileId: string,
+    text: string,
+    options: { profileGroupId?: string } = {},
+  ): Promise<Message> {
+    const params: Record<string, string> = {
+      profile_id: profileId,
+    };
+
+    return (await this.client.request(
+      "POST",
+      `/posts/${postId}/comments/${commentId}/private_reply`,
+      {
+        params,
+        json: { text },
+        profileGroupId: options.profileGroupId,
+      },
+    )) as Message;
   }
 }

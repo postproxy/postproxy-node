@@ -243,9 +243,9 @@ const isValid = verifySignature(
 
 Subscribe to any of these events (or pass `["*"]` for all):
 
-`post.processed`, `post.imported`, `platform_post.published`, `platform_post.failed`, `platform_post.failed_waiting_for_retry`, `platform_post.insights`, `profile.connected`, `profile.disconnected`, `profile.stats`, `media.failed`, `comment.created`.
+`post.processed`, `post.imported`, `platform_post.published`, `platform_post.failed`, `platform_post.failed_waiting_for_retry`, `platform_post.insights`, `profile.connected`, `profile.disconnected`, `profile.stats`, `media.failed`, `comment.created`, `profile_comment.created`, `message.received`, `message.sent`, `message.delivered`, `message.read`, `message.edited`, `message.deleted`, `message.failed_waiting_for_retry`, `message.failed`, `reaction.received`.
 
-`parseWebhookEvent` validates the envelope and returns a discriminated union — the `type` field narrows `data` to the right payload type:
+`parseWebhookEvent` validates the envelope and returns a discriminated union — the `type` field narrows `data` to the right payload type. The `message.*` events share the `MessageEventData` payload (`{ message: Message }`), `reaction.received` uses `ReactionEventData`, and `profile_comment.created` uses `ProfileCommentCreatedData`:
 
 ```typescript
 import { parseWebhookEvent, WebhookParseError } from "postproxy-sdk";
@@ -261,6 +261,18 @@ try {
       break;
     case "comment.created":
       console.log(`${event.data.author_username}: ${event.data.body}`);
+      break;
+    case "message.received":
+      // event.data is MessageEventData
+      console.log(`New DM in ${event.data.message.chat_id}: ${event.data.message.body}`);
+      break;
+    case "reaction.received":
+      // event.data is ReactionEventData
+      console.log(`${event.data.action}: ${event.data.emoji}`);
+      break;
+    case "profile_comment.created":
+      // event.data is ProfileCommentCreatedData
+      console.log(`Review: ${event.data.body}`);
       break;
     // ... other cases are exhaustively typed
   }
@@ -328,6 +340,15 @@ const post = await client.posts.create(
 const comments = await client.comments.list("post-id", "profile-id");
 for (const comment of comments.data) {
   console.log(comment.author_username, comment.body);
+
+  // Author signals (e.g. follower_count, is_verified_user) when the platform provides them
+  console.log(comment.metadata);
+
+  // Media attached to the comment (image/video/audio/gif/external/file)
+  for (const att of comment.attachments) {
+    console.log(`  ${att.type}: ${att.url} (${att.status})`);
+  }
+
   for (const reply of comment.replies ?? []) {
     console.log(`  ${reply.author_username}: ${reply.body}`);
   }
@@ -361,6 +382,73 @@ await client.comments.unhide("post-id", "comment-id", "profile-id");
 // Like / unlike a comment
 await client.comments.like("post-id", "comment-id", "profile-id");
 await client.comments.unlike("post-id", "comment-id", "profile-id");
+
+// Privately reply to a comment's author via DM (Instagram/Facebook) — returns a Message
+const dm = await client.comments.privateReply(
+  "post-id",
+  "comment-id",
+  "profile-id",
+  "Thanks — DM-ing you the details.",
+);
+console.log(dm.id, dm.chat_id);
+```
+
+### Direct Messages
+
+Send and receive direct messages (chats + messages) on Facebook Messenger, Instagram, Telegram, and Bluesky. A chat represents a conversation with one participant; messages flow inbound and outbound within it.
+
+```typescript
+// List chats for a DM-capable profile (paginated)
+const chats = await client.chats.list("profile-id", { perPage: 20 });
+for (const chat of chats.data) {
+  console.log(chat.participant_username, chat.last_message_at);
+}
+
+// Find or create a chat with a participant
+const chat = await client.chats.create("profile-id", "participant-external-id", {
+  participantUsername: "jane_doe",
+});
+
+// Get a single chat
+const c = await client.chats.get(chat.id);
+
+// Archive / unarchive a chat (Bluesky only)
+await client.chats.archive(chat.id);
+await client.chats.unarchive(chat.id);
+
+// List messages in a chat (filter by direction/status)
+const messages = await client.messages.list(chat.id, { direction: "inbound" });
+for (const msg of messages.data) {
+  console.log(`[${msg.direction}] ${msg.body}`);
+  for (const att of msg.attachments) {
+    console.log(`  ${att.type}: ${att.url}`);
+  }
+  for (const r of msg.reactions) {
+    console.log(`  reaction: ${r.emoji}`);
+  }
+}
+
+// Send a text message
+const sent = await client.messages.send(chat.id, { body: "Yes, we ship worldwide!" });
+
+// Send outside the 24h window with a message tag (Facebook/Instagram)
+await client.messages.send(chat.id, { body: "Following up.", tag: "HUMAN_AGENT" });
+
+// Send media by hosted URL
+await client.messages.send(chat.id, { media: ["https://cdn.example.com/photo.png"] });
+
+// Send media from a local file (multipart upload)
+await client.messages.send(chat.id, { mediaFiles: ["./photo.png"] });
+
+// Get a single message
+const message = await client.messages.get(sent.id);
+
+// Edit an outbound message (Telegram only)
+await client.messages.edit(sent.id, { body: "Updated answer." });
+
+// React / unreact (Facebook & Instagram)
+await client.messages.react(sent.id, { reaction: "love", emoji: "❤️" });
+await client.messages.unreact(sent.id);
 ```
 
 ### Profile comments (Google Business reviews)

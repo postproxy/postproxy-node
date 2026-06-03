@@ -17,6 +17,8 @@ import type {
   TikTokPrivacy,
   YouTubePrivacy,
   TelegramParseMode,
+  MessageDirection,
+  MessageStatus,
   WebhookEventType,
 } from "./constants";
 
@@ -239,6 +241,15 @@ export interface ProfileComment {
   replies: ProfileComment[];
 }
 
+// Shared by both Comment.attachments and Message.attachments.
+export interface Attachment {
+  id: string;
+  type: string;
+  url: string | null;
+  status: MediaStatus;
+  external_id: string | null;
+}
+
 export interface Comment {
   id: string;
   external_id: string | null;
@@ -247,11 +258,13 @@ export interface Comment {
   author_username: string | null;
   author_avatar_url: string | null;
   author_external_id: string | null;
+  metadata: Record<string, unknown> | null;
   parent_external_id: string | null;
   like_count: number;
   is_hidden: boolean;
   permalink: string | null;
   platform_data: Record<string, unknown> | null;
+  attachments: Attachment[];
   posted_at: string | null;
   created_at: string;
   replies: Comment[];
@@ -259,6 +272,57 @@ export interface Comment {
 
 export interface AcceptedResponse {
   accepted: boolean;
+}
+
+// --- Direct Message Models ---
+
+export interface Reaction {
+  sender_external_id: string;
+  emoji: string | null;
+  reaction: string | null;
+  at: string | null;
+}
+
+export interface Chat {
+  id: string;
+  profile_id: string;
+  platform: Platform;
+  participant_external_id: string;
+  participant_username: string | null;
+  participant_name: string | null;
+  participant_avatar_url: string | null;
+  external_conversation_id: string | null;
+  last_inbound_at: string | null;
+  last_outbound_at: string | null;
+  last_message_at: string | null;
+  metadata: Record<string, unknown> | null;
+  // Bluesky-only; absent for other platforms.
+  archived?: boolean;
+  created_at: string;
+}
+
+export interface Message {
+  id: string;
+  chat_id: string;
+  external_id: string | null;
+  direction: MessageDirection;
+  body: string | null;
+  status: MessageStatus;
+  tag: string | null;
+  external_comment_id: string | null;
+  error_message: string | null;
+  platform_data: Record<string, unknown> | null;
+  external_posted_at: string | null;
+  external_delivered_at: string | null;
+  external_read_at: string | null;
+  external_edited_at: string | null;
+  reply_to_external_id: string | null;
+  reply_markup: Record<string, unknown> | null;
+  external_deleted_at: string | null;
+  reactions: Reaction[];
+  attachments: Attachment[];
+  is_unsupported: boolean;
+  created_at: string;
 }
 
 // --- Webhook Models ---
@@ -372,6 +436,35 @@ export interface CommentCreatedData {
   created_at: string;
 }
 
+export interface MessageEventData {
+  message: Message;
+}
+
+export interface ReactionEventData {
+  message: Message;
+  sender_external_id: string;
+  action: "react" | "unreact";
+  reaction: string | null;
+  emoji: string | null;
+  occurred_at: string | null;
+}
+
+export interface ProfileCommentCreatedData {
+  id: string;
+  profile_id: string;
+  platform: Platform;
+  placement_id: string | null;
+  external_id: string | null;
+  parent_external_id: string | null;
+  body: string;
+  status: string;
+  author_username: string | null;
+  author_avatar_url: string | null;
+  platform_data: Record<string, unknown> | null;
+  posted_at: string | null;
+  created_at: string;
+}
+
 interface BaseWebhookEvent<T extends WebhookEventType, D> {
   id: string;
   type: T;
@@ -390,7 +483,17 @@ export type WebhookEvent =
   | BaseWebhookEvent<"profile.disconnected", ProfileEventData>
   | BaseWebhookEvent<"profile.stats", ProfileStatsData>
   | BaseWebhookEvent<"media.failed", MediaFailedData>
-  | BaseWebhookEvent<"comment.created", CommentCreatedData>;
+  | BaseWebhookEvent<"comment.created", CommentCreatedData>
+  | BaseWebhookEvent<"profile_comment.created", ProfileCommentCreatedData>
+  | BaseWebhookEvent<"message.received", MessageEventData>
+  | BaseWebhookEvent<"message.sent", MessageEventData>
+  | BaseWebhookEvent<"message.delivered", MessageEventData>
+  | BaseWebhookEvent<"message.read", MessageEventData>
+  | BaseWebhookEvent<"message.edited", MessageEventData>
+  | BaseWebhookEvent<"message.deleted", MessageEventData>
+  | BaseWebhookEvent<"message.failed_waiting_for_retry", MessageEventData>
+  | BaseWebhookEvent<"message.failed", MessageEventData>
+  | BaseWebhookEvent<"reaction.received", ReactionEventData>;
 
 // --- Platform Parameter Models ---
 

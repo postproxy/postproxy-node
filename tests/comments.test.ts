@@ -9,11 +9,13 @@ const MOCK_REPLY = {
   author_username: "author",
   author_avatar_url: null,
   author_external_id: "67890",
+  metadata: null,
   parent_external_id: "17858893269123456",
   like_count: 1,
   is_hidden: false,
   permalink: null,
   platform_data: null,
+  attachments: [],
   posted_at: "2026-03-25T10:05:00Z",
   created_at: "2026-03-25T10:05:00Z",
   replies: [],
@@ -27,11 +29,13 @@ const MOCK_COMMENT = {
   author_username: "someuser",
   author_avatar_url: null,
   author_external_id: "12345",
+  metadata: null,
   parent_external_id: null,
   like_count: 3,
   is_hidden: false,
   permalink: null,
   platform_data: null,
+  attachments: [],
   posted_at: "2026-03-25T10:00:00Z",
   created_at: "2026-03-25T10:01:00Z",
   replies: [MOCK_REPLY],
@@ -166,5 +170,70 @@ describe("Comments Resource", () => {
     const result = await client.comments.unlike("post1", "cmt_abc123", "prof1");
     expect(result.accepted).toBe(true);
     expect(getRequests()[0].url).toContain("/comments/cmt_abc123/unlike");
+  });
+
+  it("parses attachments and metadata", async () => {
+    const comment = {
+      ...MOCK_COMMENT,
+      metadata: { is_verified_user: true, follower_count: 482 },
+      attachments: [
+        {
+          id: "att_xyz321",
+          type: "image",
+          url: "https://storage.postproxy.dev/x",
+          status: "processed",
+          external_id: "529233764205652",
+        },
+      ],
+    };
+    const { client } = createMockClient({ responseBody: comment });
+    const result = await client.comments.get("post1", "cmt_abc123", "prof1");
+    expect((result.metadata as Record<string, unknown>).follower_count).toBe(482);
+    expect(result.attachments).toHaveLength(1);
+    expect(result.attachments[0].type).toBe("image");
+    expect(result.attachments[0].status).toBe("processed");
+  });
+
+  it("sends a private reply (returns a Message)", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: {
+        id: "msg_222",
+        chat_id: "chat_xyz789",
+        external_id: null,
+        direction: "outbound",
+        body: "DM-ing you the details.",
+        status: "pending",
+        tag: null,
+        external_comment_id: "17858893269123456",
+        error_message: null,
+        platform_data: null,
+        external_posted_at: null,
+        external_delivered_at: null,
+        external_read_at: null,
+        external_edited_at: null,
+        reply_to_external_id: null,
+        reply_markup: null,
+        external_deleted_at: null,
+        reactions: [],
+        attachments: [],
+        is_unsupported: false,
+        created_at: "2026-05-31T15:30:05.000Z",
+      },
+    });
+    const msg = await client.comments.privateReply(
+      "post1",
+      "cmt_abc123",
+      "prof1",
+      "DM-ing you the details.",
+    );
+    expect(msg.external_comment_id).toBe("17858893269123456");
+    expect(msg.chat_id).toBe("chat_xyz789");
+    expect(getRequests()[0].method).toBe("POST");
+    expect(getRequests()[0].url).toContain(
+      "/posts/post1/comments/cmt_abc123/private_reply",
+    );
+    expect(getRequests()[0].url).toContain("profile_id=prof1");
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.text).toBe("DM-ing you the details.");
   });
 });
