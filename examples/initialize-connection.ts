@@ -19,6 +19,16 @@ async function main() {
     "https://your-app.com/callback",
   );
   console.log("Connection URL:", connection.url);
+
+  // After connecting, list a profile's placements (Pages, channels, locations)
+  const { data: placements } = await client.profiles.placements("profile-id");
+  console.log("Placements:", placements);
+
+  // Move one placement to a different profile group
+  await client.profiles.assignPlacementToGroup("profile-id", {
+    placementId: placements[0].id,
+    targetProfileGroupId: "other-group-id",
+  });
 }
 
 main().catch(console.error);

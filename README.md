@@ -499,6 +499,23 @@ for (const p of placements) {
   console.log(p.id, p.name);
 }
 
+// Move a placement (e.g. a Facebook Page or Telegram channel) to another group
+const placement = await client.profiles.assignPlacementToGroup("profile-id", {
+  placementId: "placement-external-id",
+  targetProfileGroupId: "pg-other",
+});
+console.log(placement.profile_group_id); // "pg-other"
+
+// Ice breakers (Instagram DMs): FAQ prompts shown when a user opens a chat
+const { ice_breakers } = await client.profiles.iceBreakers("profile-id");
+
+await client.profiles.setIceBreakers("profile-id", [
+  { question: "What services do you offer?", payload: "services" },
+  { question: "What are your hours?", payload: "hours" },
+]); // 1-4 items
+
+await client.profiles.deleteIceBreakers("profile-id");
+
 // Delete a profile
 const result = await client.profiles.delete("profile-id");
 console.log(result.success); // true
@@ -642,7 +659,7 @@ Key types:
 | `YouTubeParams` | format (`post`), title, privacy_status, cover_url, made_for_kids, tags, category_id, contains_synthetic_media |
 | `PinterestParams` | format (`pin`), title, board_id, destination_link, cover_url, thumb_offset |
 | `ThreadsParams` | format (`post`) |
-| `TwitterParams` | format (`post`) |
+| `TwitterParams` | format (`post`, `poll`), poll_options (2-4 choices, max 25 chars each; required for `poll`), poll_duration_minutes (5-10080; required for `poll`) |
 | `BlueskyParams` | format (`post`) |
 | `TelegramParams` | format (`post`), chat_id (required), parse_mode (`HTML`, `MarkdownV2`), disable_link_preview, disable_notification |
 

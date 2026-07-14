@@ -43,6 +43,24 @@ export interface ProfileGroup {
 export interface Placement {
   id: string;
   name: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface AssignedPlacement {
+  id: string;
+  name: string;
+  metadata: Record<string, unknown> | null;
+  profile_group_id: string;
+}
+
+export interface IceBreaker {
+  question: string;
+  payload: string;
+  [key: string]: unknown;
+}
+
+export interface IceBreakersResponse {
+  ice_breakers: IceBreaker[];
 }
 
 export interface Insights {
@@ -558,6 +576,10 @@ export interface ThreadsParams {
 
 export interface TwitterParams {
   format?: TwitterFormat;
+  /** Required when format is "poll": 2-4 options, max 25 characters each. */
+  poll_options?: string[];
+  /** Required when format is "poll": 5 to 10080 minutes (7 days). */
+  poll_duration_minutes?: number;
 }
 
 export interface BlueskyParams {

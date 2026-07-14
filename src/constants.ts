@@ -1,6 +1,6 @@
 export const BASE_URL = "https://api.postproxy.dev";
 
-export const VERSION = "1.10.0";
+export const VERSION = "1.11.0";
 
 export type Platform =
   | "facebook"
@@ -41,7 +41,7 @@ export type LinkedInFormat = "post";
 export type YouTubeFormat = "post";
 export type PinterestFormat = "pin";
 export type ThreadsFormat = "post";
-export type TwitterFormat = "post";
+export type TwitterFormat = "post" | "poll";
 export type BlueskyFormat = "post";
 export type TelegramFormat = "post";
 

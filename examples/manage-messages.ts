@@ -74,6 +74,15 @@ async function main() {
     "Thanks — DM-ing you the details.",
   );
   console.log(`Private reply queued: ${reply.id} (chat: ${reply.chat_id})`);
+
+  // Ice breakers (Instagram only): FAQ prompts shown when a user opens a chat
+  await client.profiles.setIceBreakers(profileId, [
+    { question: "What services do you offer?", payload: "services" },
+    { question: "What are your hours?", payload: "hours" },
+  ]);
+  const { ice_breakers } = await client.profiles.iceBreakers(profileId);
+  console.log(`Ice breakers: ${ice_breakers.map((ib) => ib.question).join(", ")}`);
+  // await client.profiles.deleteIceBreakers(profileId);
 }
 
 main().catch(console.error);

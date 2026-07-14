@@ -92,6 +92,30 @@ describe("Posts Resource", () => {
     });
   });
 
+  it("creates a twitter poll post", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST,
+    });
+    await client.posts.create("Which framework?", ["profile-1"], {
+      platforms: {
+        twitter: {
+          format: "poll",
+          poll_options: ["Rails", "Django", "Laravel"],
+          poll_duration_minutes: 1440,
+        },
+      },
+    });
+
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.platforms).toEqual({
+      twitter: {
+        format: "poll",
+        poll_options: ["Rails", "Django", "Laravel"],
+        poll_duration_minutes: 1440,
+      },
+    });
+  });
+
   it("creates a scheduled post", async () => {
     const { client, getRequests } = createMockClient({
       responseBody: MOCK_POST,

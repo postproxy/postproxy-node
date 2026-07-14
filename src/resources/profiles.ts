@@ -2,6 +2,9 @@ import type { PostProxy } from "../client";
 import type {
   Profile,
   Placement,
+  AssignedPlacement,
+  IceBreaker,
+  IceBreakersResponse,
   ListResponse,
   SuccessResponse,
   ProfileStatsResponse,
@@ -59,6 +62,56 @@ export class ProfilesResource {
       params,
       profileGroupId: options.profileGroupId,
     })) as ProfileStatsResponse;
+  }
+
+  async assignPlacementToGroup(
+    id: string,
+    params: { placementId: string; targetProfileGroupId: string },
+    options: { profileGroupId?: string } = {},
+  ): Promise<AssignedPlacement> {
+    return (await this.client.request(
+      "PATCH",
+      `/profiles/${id}/assign_placement_to_group`,
+      {
+        json: {
+          placement_id: params.placementId,
+          target_profile_group_id: params.targetProfileGroupId,
+        },
+        profileGroupId: options.profileGroupId,
+      },
+    )) as AssignedPlacement;
+  }
+
+  // Ice breakers are supported for Instagram profiles only.
+  async iceBreakers(
+    id: string,
+    options: { profileGroupId?: string } = {},
+  ): Promise<IceBreakersResponse> {
+    return (await this.client.request("GET", `/profiles/${id}/ice_breakers`, {
+      profileGroupId: options.profileGroupId,
+    })) as IceBreakersResponse;
+  }
+
+  async setIceBreakers(
+    id: string,
+    iceBreakers: IceBreaker[],
+    options: { profileGroupId?: string } = {},
+  ): Promise<SuccessResponse> {
+    return (await this.client.request("POST", `/profiles/${id}/ice_breakers`, {
+      json: { ice_breakers: iceBreakers },
+      profileGroupId: options.profileGroupId,
+    })) as SuccessResponse;
+  }
+
+  async deleteIceBreakers(
+    id: string,
+    options: { profileGroupId?: string } = {},
+  ): Promise<SuccessResponse> {
+    return (await this.client.request(
+      "DELETE",
+      `/profiles/${id}/ice_breakers`,
+      { profileGroupId: options.profileGroupId },
+    )) as SuccessResponse;
   }
 
   async delete(

@@ -41,6 +41,72 @@ describe("Profiles Resource", () => {
     expect(getRequests()[0].url).toContain("/profiles/prof-1/placements");
   });
 
+  it("assigns a placement to another group", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: {
+        id: "pl-1",
+        name: "Feed",
+        metadata: {},
+        profile_group_id: "pg-2",
+      },
+    });
+    const result = await client.profiles.assignPlacementToGroup("prof-1", {
+      placementId: "pl-1",
+      targetProfileGroupId: "pg-2",
+    });
+    expect(result.profile_group_id).toBe("pg-2");
+    const request = getRequests()[0];
+    expect(request.method).toBe("PATCH");
+    expect(request.url).toContain(
+      "/profiles/prof-1/assign_placement_to_group",
+    );
+    expect(request.body).toEqual({
+      placement_id: "pl-1",
+      target_profile_group_id: "pg-2",
+    });
+  });
+
+  it("lists ice breakers", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: {
+        ice_breakers: [{ question: "What do you do?", payload: "services" }],
+      },
+    });
+    const result = await client.profiles.iceBreakers("prof-1");
+    expect(result.ice_breakers).toHaveLength(1);
+    expect(result.ice_breakers[0].question).toBe("What do you do?");
+    const request = getRequests()[0];
+    expect(request.method).toBe("GET");
+    expect(request.url).toContain("/profiles/prof-1/ice_breakers");
+  });
+
+  it("sets ice breakers", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { success: true },
+    });
+    const result = await client.profiles.setIceBreakers("prof-1", [
+      { question: "What do you do?", payload: "services" },
+    ]);
+    expect(result.success).toBe(true);
+    const request = getRequests()[0];
+    expect(request.method).toBe("POST");
+    expect(request.url).toContain("/profiles/prof-1/ice_breakers");
+    expect(request.body).toEqual({
+      ice_breakers: [{ question: "What do you do?", payload: "services" }],
+    });
+  });
+
+  it("deletes ice breakers", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { success: true },
+    });
+    const result = await client.profiles.deleteIceBreakers("prof-1");
+    expect(result.success).toBe(true);
+    const request = getRequests()[0];
+    expect(request.method).toBe("DELETE");
+    expect(request.url).toContain("/profiles/prof-1/ice_breakers");
+  });
+
   it("deletes a profile", async () => {
     const { client, getRequests } = createMockClient({
       responseBody: { success: true },

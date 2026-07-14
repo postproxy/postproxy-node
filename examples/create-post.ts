@@ -101,6 +101,18 @@ async function main() {
   );
   console.log("Thread post:", threadPost.id, `(${threadPost.thread.length} children)`);
 
+  // Twitter poll: 2-4 options (max 25 chars each), 5-10080 minutes
+  const pollPost = await client.posts.create("Which framework?", ["twitter"], {
+    platforms: {
+      twitter: {
+        format: "poll",
+        poll_options: ["Rails", "Django", "Laravel", "Other"],
+        poll_duration_minutes: 1440,
+      },
+    },
+  });
+  console.log("Poll post:", pollPost.id);
+
   // Delete a post
   const deleted = await client.posts.delete(post.id);
   console.log("Deleted:", deleted);
