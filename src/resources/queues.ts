@@ -43,6 +43,7 @@ export class QueuesResource {
       timezone?: string;
       jitter?: number;
       timeslots?: { day: number; time: string }[];
+      idempotencyKey?: string;
     } = {},
   ): Promise<Queue> {
     const postQueue: Record<string, unknown> = { name };
@@ -57,6 +58,7 @@ export class QueuesResource {
         profile_group_id: profileGroupId,
         post_queue: postQueue,
       },
+      idempotencyKey: options.idempotencyKey,
     })) as Queue;
   }
 
@@ -72,6 +74,7 @@ export class QueuesResource {
         | { day: number; time: string }
         | { id: number; _destroy: true }
       )[];
+      idempotencyKey?: string;
     } = {},
   ): Promise<Queue> {
     const postQueue: Record<string, unknown> = {};
@@ -85,13 +88,16 @@ export class QueuesResource {
 
     return (await this.client.request("PATCH", `/post_queues/${id}`, {
       json: { post_queue: postQueue },
+      idempotencyKey: options.idempotencyKey,
     })) as Queue;
   }
 
-  async delete(id: string): Promise<DeleteResponse> {
-    return (await this.client.request(
-      "DELETE",
-      `/post_queues/${id}`,
-    )) as DeleteResponse;
+  async delete(
+    id: string,
+    options: { idempotencyKey?: string } = {},
+  ): Promise<DeleteResponse> {
+    return (await this.client.request("DELETE", `/post_queues/${id}`, {
+      idempotencyKey: options.idempotencyKey,
+    })) as DeleteResponse;
   }
 }

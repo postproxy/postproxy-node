@@ -84,9 +84,10 @@ export class PostsResource {
       queueId?: string;
       queuePriority?: string;
       profileGroupId?: string;
+      idempotencyKey?: string;
     } = {},
   ): Promise<Post> {
-    const { media, mediaFiles, platforms, thread, scheduledAt, draft, queueId, queuePriority, profileGroupId } =
+    const { media, mediaFiles, platforms, thread, scheduledAt, draft, queueId, queuePriority, profileGroupId, idempotencyKey } =
       options;
 
     const hasThreadFiles = thread?.some((t) => t.mediaFiles && t.mediaFiles.length > 0);
@@ -190,6 +191,7 @@ export class PostsResource {
       return (await this.client.request("POST", "/posts", {
         formData,
         profileGroupId,
+        idempotencyKey,
       })) as Post;
     }
 
@@ -216,6 +218,7 @@ export class PostsResource {
     return (await this.client.request("POST", "/posts", {
       json: payload,
       profileGroupId,
+      idempotencyKey,
     })) as Post;
   }
 
@@ -233,6 +236,7 @@ export class PostsResource {
       queueId?: string;
       queuePriority?: string;
       profileGroupId?: string;
+      idempotencyKey?: string;
     } = {},
   ): Promise<Post> {
     const {
@@ -247,6 +251,7 @@ export class PostsResource {
       queueId,
       queuePriority,
       profileGroupId,
+      idempotencyKey,
     } = options;
 
     const hasThreadFiles = thread?.some(
@@ -349,6 +354,7 @@ export class PostsResource {
       return (await this.client.request("PATCH", `/posts/${id}`, {
         formData,
         profileGroupId,
+        idempotencyKey,
       })) as Post;
     }
 
@@ -372,15 +378,17 @@ export class PostsResource {
     return (await this.client.request("PATCH", `/posts/${id}`, {
       json: payload,
       profileGroupId,
+      idempotencyKey,
     })) as Post;
   }
 
   async publishDraft(
     id: string,
-    options: { profileGroupId?: string } = {},
+    options: { profileGroupId?: string; idempotencyKey?: string } = {},
   ): Promise<Post> {
     return (await this.client.request("POST", `/posts/${id}/publish`, {
       profileGroupId: options.profileGroupId,
+      idempotencyKey: options.idempotencyKey,
     })) as Post;
   }
 
@@ -417,7 +425,11 @@ export class PostsResource {
 
   async delete(
     id: string,
-    options: { deleteOnPlatform?: boolean; profileGroupId?: string } = {},
+    options: {
+      deleteOnPlatform?: boolean;
+      profileGroupId?: string;
+      idempotencyKey?: string;
+    } = {},
   ): Promise<DeleteResponse> {
     const params: Record<string, string> = {};
     if (options.deleteOnPlatform != null) {
@@ -426,6 +438,7 @@ export class PostsResource {
     return (await this.client.request("DELETE", `/posts/${id}`, {
       params: Object.keys(params).length > 0 ? params : undefined,
       profileGroupId: options.profileGroupId,
+      idempotencyKey: options.idempotencyKey,
     })) as DeleteResponse;
   }
 
@@ -436,6 +449,7 @@ export class PostsResource {
       profileId?: string;
       network?: string;
       profileGroupId?: string;
+      idempotencyKey?: string;
     } = {},
   ): Promise<DeleteOnPlatformResponse> {
     const payload: Record<string, unknown> = {};
@@ -449,6 +463,7 @@ export class PostsResource {
       {
         json: Object.keys(payload).length > 0 ? payload : undefined,
         profileGroupId: options.profileGroupId,
+        idempotencyKey: options.idempotencyKey,
       },
     )) as DeleteOnPlatformResponse;
   }

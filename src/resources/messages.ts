@@ -60,6 +60,7 @@ export class MessagesResource {
       replyToExternalId?: string;
       replyMarkup?: Record<string, unknown>;
       profileGroupId?: string;
+      idempotencyKey?: string;
     } = {},
   ): Promise<Message> {
     const {
@@ -70,6 +71,7 @@ export class MessagesResource {
       replyToExternalId,
       replyMarkup,
       profileGroupId,
+      idempotencyKey,
     } = options;
 
     // Use multipart form data when local files are provided (mirrors PostsResource).
@@ -100,6 +102,7 @@ export class MessagesResource {
       return (await this.client.request("POST", `/chats/${chatId}/messages`, {
         formData,
         profileGroupId,
+        idempotencyKey,
       })) as Message;
     }
 
@@ -114,6 +117,7 @@ export class MessagesResource {
     return (await this.client.request("POST", `/chats/${chatId}/messages`, {
       json,
       profileGroupId,
+      idempotencyKey,
     })) as Message;
   }
 
@@ -132,6 +136,7 @@ export class MessagesResource {
       body?: string;
       replyMarkup?: Record<string, unknown>;
       profileGroupId?: string;
+      idempotencyKey?: string;
     } = {},
   ): Promise<Message> {
     const json: Record<string, unknown> = {};
@@ -141,6 +146,7 @@ export class MessagesResource {
     return (await this.client.request("PATCH", `/messages/${messageId}`, {
       json,
       profileGroupId: options.profileGroupId,
+      idempotencyKey: options.idempotencyKey,
     })) as Message;
   }
 
@@ -150,6 +156,7 @@ export class MessagesResource {
       reaction?: string;
       emoji?: string;
       profileGroupId?: string;
+      idempotencyKey?: string;
     } = {},
   ): Promise<Message> {
     const json: Record<string, unknown> = {};
@@ -159,18 +166,20 @@ export class MessagesResource {
     return (await this.client.request("POST", `/messages/${messageId}/react`, {
       json: Object.keys(json).length > 0 ? json : undefined,
       profileGroupId: options.profileGroupId,
+      idempotencyKey: options.idempotencyKey,
     })) as Message;
   }
 
   async unreact(
     messageId: string,
-    options: { profileGroupId?: string } = {},
+    options: { profileGroupId?: string; idempotencyKey?: string } = {},
   ): Promise<Message> {
     return (await this.client.request(
       "DELETE",
       `/messages/${messageId}/unreact`,
       {
         profileGroupId: options.profileGroupId,
+        idempotencyKey: options.idempotencyKey,
       },
     )) as Message;
   }

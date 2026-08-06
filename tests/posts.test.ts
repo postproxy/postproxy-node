@@ -161,6 +161,7 @@ describe("Posts Resource", () => {
               records: [
                 {
                   stats: { impressions: 1200, likes: 85, comments: 12 },
+                  raw_stats: { views: 1200, like_count: 85 },
                   recorded_at: "2026-02-20T12:00:00Z",
                 },
               ],
@@ -177,6 +178,10 @@ describe("Posts Resource", () => {
     expect(result.data["post-1"].platforms).toHaveLength(1);
     expect(result.data["post-1"].platforms[0].platform).toBe("instagram");
     expect(result.data["post-1"].platforms[0].records[0].stats.impressions).toBe(1200);
+    // raw_stats carries every metric under its original platform name.
+    expect(result.data["post-1"].platforms[0].records[0].raw_stats.views).toBe(
+      1200,
+    );
 
     const url = getRequests()[0].url;
     expect(url).toContain("/posts/stats");

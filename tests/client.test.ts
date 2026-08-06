@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createMockClient } from "./setup.js";
-import { AuthenticationError, NotFoundError, ValidationError, BadRequestError } from "../src/index.js";
+import { afterEach, vi } from "vitest";
+import { PostProxy, AuthenticationError, ConflictError, NotFoundError, ValidationError, BadRequestError } from "../src/index.js";
 
 describe("PostProxy Client", () => {
   it("sends authorization header", async () => {
@@ -61,5 +62,86 @@ describe("PostProxy Client", () => {
     await expect(
       client.posts.create("test", ["profile-1"]),
     ).rejects.toThrow(BadRequestError);
+  });
+
+  it("throws ConflictError on 409 and keeps the response body", async () => {
+    const { client } = createMockClient({
+      responseBody: {
+        error: "Duplicate post",
+        duplicate_post_id: "post-1",
+      },
+      responseStatus: 409,
+    });
+
+    await expect(
+      client.posts.create("test", ["profile-1"]),
+    ).rejects.toThrow(ConflictError);
+
+    try {
+      await client.posts.create("test", ["profile-1"]);
+    } catch (error) {
+      expect((error as ConflictError).statusCode).toBe(409);
+      expect((error as ConflictError).response?.duplicate_post_id).toBe(
+        "post-1",
+      );
+    }
+  });
+});
+
+describe("Idempotency-Key", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function stubFetch() {
+    return vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+  }
+
+  it("sends the header when a key is passed to a write method", async () => {
+    const fetchSpy = stubFetch();
+    const client = new PostProxy("test-api-key", {
+      baseUrl: "https://mock.postproxy.dev",
+    });
+
+    await client.posts.create("hello", ["profile-1"], {
+      idempotencyKey: "3f8b1c94-6a2d-4f0e-9d31-7c5e2a8b4f10",
+    });
+
+    const init = fetchSpy.mock.calls[0][1] as RequestInit;
+    const headers = init.headers as Record<string, string>;
+    expect(headers["Idempotency-Key"]).toBe(
+      "3f8b1c94-6a2d-4f0e-9d31-7c5e2a8b4f10",
+    );
+  });
+
+  it("omits the header when no key is passed", async () => {
+    const fetchSpy = stubFetch();
+    const client = new PostProxy("test-api-key", {
+      baseUrl: "https://mock.postproxy.dev",
+    });
+
+    await client.posts.create("hello", ["profile-1"]);
+
+    const init = fetchSpy.mock.calls[0][1] as RequestInit;
+    const headers = init.headers as Record<string, string>;
+    expect(headers["Idempotency-Key"]).toBeUndefined();
+  });
+
+  it("sends the header on multipart requests too", async () => {
+    const fetchSpy = stubFetch();
+    const client = new PostProxy("test-api-key", {
+      baseUrl: "https://mock.postproxy.dev",
+    });
+
+    await client.messages.send("chat-1", {
+      body: "hi",
+      idempotencyKey: "key-123",
+    });
+
+    const init = fetchSpy.mock.calls[0][1] as RequestInit;
+    const headers = init.headers as Record<string, string>;
+    expect(headers["Idempotency-Key"]).toBe("key-123");
   });
 });

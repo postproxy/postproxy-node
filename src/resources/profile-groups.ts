@@ -28,17 +28,23 @@ export class ProfileGroupsResource {
     )) as ProfileGroup;
   }
 
-  async create(name: string): Promise<ProfileGroup> {
+  async create(
+    name: string,
+    options: { idempotencyKey?: string } = {},
+  ): Promise<ProfileGroup> {
     return (await this.client.request("POST", "/profile_groups", {
       json: { profile_group: { name } },
+      idempotencyKey: options.idempotencyKey,
     })) as ProfileGroup;
   }
 
-  async delete(id: string): Promise<DeleteResponse> {
-    return (await this.client.request(
-      "DELETE",
-      `/profile_groups/${id}`,
-    )) as DeleteResponse;
+  async delete(
+    id: string,
+    options: { idempotencyKey?: string } = {},
+  ): Promise<DeleteResponse> {
+    return (await this.client.request("DELETE", `/profile_groups/${id}`, {
+      idempotencyKey: options.idempotencyKey,
+    })) as DeleteResponse;
   }
 
   // OAuth platforms require `redirectUrl`. BlueSky and Telegram have dedicated helpers

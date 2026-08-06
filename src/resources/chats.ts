@@ -48,6 +48,7 @@ export class ChatsResource {
       participantUsername?: string;
       participantName?: string;
       profileGroupId?: string;
+      idempotencyKey?: string;
     } = {},
   ): Promise<Chat> {
     const json: Record<string, unknown> = {
@@ -61,6 +62,7 @@ export class ChatsResource {
     return (await this.client.request("POST", `/profiles/${profileId}/chats`, {
       json,
       profileGroupId: options.profileGroupId,
+      idempotencyKey: options.idempotencyKey,
     })) as Chat;
   }
 
@@ -75,19 +77,21 @@ export class ChatsResource {
 
   async archive(
     chatId: string,
-    options: { profileGroupId?: string } = {},
+    options: { profileGroupId?: string; idempotencyKey?: string } = {},
   ): Promise<Chat> {
     return (await this.client.request("POST", `/chats/${chatId}/archive`, {
       profileGroupId: options.profileGroupId,
+      idempotencyKey: options.idempotencyKey,
     })) as Chat;
   }
 
   async unarchive(
     chatId: string,
-    options: { profileGroupId?: string } = {},
+    options: { profileGroupId?: string; idempotencyKey?: string } = {},
   ): Promise<Chat> {
     return (await this.client.request("DELETE", `/chats/${chatId}/archive`, {
       profileGroupId: options.profileGroupId,
+      idempotencyKey: options.idempotencyKey,
     })) as Chat;
   }
 }

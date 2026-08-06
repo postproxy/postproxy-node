@@ -2,6 +2,7 @@ import { BASE_URL, VERSION } from "./constants";
 import {
   PostProxyError,
   AuthenticationError,
+  ConflictError,
   NotFoundError,
   ValidationError,
   BadRequestError,
@@ -60,9 +61,10 @@ export class PostProxy {
       json?: Record<string, unknown>;
       formData?: FormData;
       profileGroupId?: string | null;
+      idempotencyKey?: string;
     } = {},
   ): Promise<unknown> {
-    const { params, json, formData, profileGroupId } = options;
+    const { params, json, formData, profileGroupId, idempotencyKey } = options;
 
     const url = new URL(`/api${path}`, this.baseUrl);
 
@@ -83,6 +85,10 @@ export class PostProxy {
       Authorization: `Bearer ${this.apiKey}`,
       "User-Agent": `postproxy-node/${VERSION} (node/${process.version})`,
     };
+
+    if (idempotencyKey != null) {
+      headers["Idempotency-Key"] = idempotencyKey;
+    }
 
     let body: string | FormData | undefined;
 
@@ -124,6 +130,8 @@ export class PostProxy {
         throw new AuthenticationError(message, responseBody);
       case 404:
         throw new NotFoundError(message, responseBody);
+      case 409:
+        throw new ConflictError(message, responseBody);
       case 422:
         throw new ValidationError(message, responseBody);
       case 400:

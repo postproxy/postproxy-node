@@ -34,6 +34,19 @@ export class NotFoundError extends PostProxyError {
   }
 }
 
+// 409. Raised for a duplicate submission (`response.duplicate_post_id`), a
+// backfill that is already running (`response.profile_sync_id`), or a request
+// whose `Idempotency-Key` is still in flight.
+export class ConflictError extends PostProxyError {
+  constructor(
+    message: string,
+    response: Record<string, unknown> | null = null,
+  ) {
+    super(message, 409, response);
+    this.name = "ConflictError";
+  }
+}
+
 export class ValidationError extends PostProxyError {
   constructor(
     message: string,

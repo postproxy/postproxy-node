@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createMockClient } from "./setup.js";
+import { ConflictError } from "../src/index.js";
 
 const MOCK_PROFILE = {
   id: "prof-1",
@@ -9,6 +10,22 @@ const MOCK_PROFILE = {
   profile_group_id: "pg-1",
   expires_at: null,
   post_count: 5,
+};
+
+const MOCK_POST_SYNC = {
+  id: "sync456def",
+  profile_id: "prof-1",
+  kind: "posts",
+  trigger: "backfill",
+  status: "running",
+  started_at: "2026-08-06T09:15:02.000Z",
+  completed_at: null,
+  posts_seen: 150,
+  posts_imported: 143,
+  backfill_from: "2025-01-01T00:00:00.000Z",
+  oldest_posted_at: "2025-11-04T18:22:00.000Z",
+  error: null,
+  created_at: "2026-08-06T09:15:00.000Z",
 };
 
 describe("Profiles Resource", () => {
@@ -114,5 +131,94 @@ describe("Profiles Resource", () => {
     const result = await client.profiles.delete("prof-1");
     expect(result.success).toBe(true);
     expect(getRequests()[0].method).toBe("DELETE");
+  });
+
+  it("starts a posts backfill", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { ...MOCK_POST_SYNC, status: "pending" },
+    });
+    const sync = await client.profiles.backfillPosts("prof-1", {
+      from: "2025-01-01",
+    });
+
+    expect(sync.id).toBe("sync456def");
+    expect(sync.trigger).toBe("backfill");
+    expect(sync.status).toBe("pending");
+
+    const request = getRequests()[0];
+    expect(request.method).toBe("POST");
+    expect(request.url).toContain("/profiles/prof-1/backfill_posts");
+    expect(request.body).toEqual({ from: "2025-01-01" });
+  });
+
+  it("passes an idempotency key when starting a backfill", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_POST_SYNC,
+    });
+    await client.profiles.backfillPosts(
+      "prof-1",
+      { from: "2025-01-01" },
+      { idempotencyKey: "key-1" },
+    );
+    expect(getRequests()[0].headers["Idempotency-Key"]).toBe("key-1");
+  });
+
+  it("throws ConflictError when a backfill is already running", async () => {
+    const { client } = createMockClient({
+      responseBody: {
+        error: "A posts backfill is already running for this profile",
+        profile_sync_id: "sync456def",
+      },
+      responseStatus: 409,
+    });
+
+    try {
+      await client.profiles.backfillPosts("prof-1", { from: "2025-01-01" });
+      expect.unreachable("expected a ConflictError");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConflictError);
+      expect((error as ConflictError).response?.profile_sync_id).toBe(
+        "sync456def",
+      );
+    }
+  });
+
+  it("lists post syncs with filters", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: {
+        total: 1,
+        page: 0,
+        per_page: 25,
+        data: [MOCK_POST_SYNC],
+      },
+    });
+    const result = await client.profiles.postSyncs("prof-1", {
+      trigger: "backfill",
+      status: "running",
+      page: 0,
+      perPage: 25,
+    });
+
+    expect(result.total).toBe(1);
+    expect(result.data[0].posts_imported).toBe(143);
+    expect(result.data[0].oldest_posted_at).toBe("2025-11-04T18:22:00.000Z");
+
+    const url = getRequests()[0].url;
+    expect(url).toContain("/profiles/prof-1/post_syncs");
+    expect(url).toContain("trigger=backfill");
+    expect(url).toContain("status=running");
+    expect(url).toContain("per_page=25");
+  });
+
+  it("gets a single post sync", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { ...MOCK_POST_SYNC, status: "completed" },
+    });
+    const sync = await client.profiles.postSync("prof-1", "sync456def");
+
+    expect(sync.status).toBe("completed");
+    expect(getRequests()[0].url).toContain(
+      "/profiles/prof-1/post_syncs/sync456def",
+    );
   });
 });

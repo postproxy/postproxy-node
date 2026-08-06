@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.12.0] - 2026-08-06
+
+### Added
+
+- **Post syncs & backfill.** `profiles.backfillPosts(id, { from })` walks a profile's feed backwards from the newest post and imports the history behind it; `profiles.postSyncs(id, { trigger, status, page, perPage })` and `profiles.postSync(id, postSyncId)` expose every post pull — the one fired on connect, the recurring poll, and backfills — as a new `PostSync` type, with `PostSyncTrigger` and `PostSyncStatus`.
+- **`comments.listAll({ postIds, profiles, from, to, page, perPage })`** — comments across every post in the profile group in one request. Flat: replies are their own entries linked by `parent_external_id`, typed as the new `BulkComment` (adds `post_id`, `profile_id`, `platform`).
+- `from` and `to` options on `comments.list()`, filtering on when PostProxy received the comment.
+- **Idempotency.** Every write method accepts an `idempotencyKey` option, sent as the `Idempotency-Key` header, so a dropped connection no longer forces a choice between a duplicate write and a lost one.
+- `ConflictError` (409), raised for a duplicate submission (`response.duplicate_post_id`), a backfill already running (`response.profile_sync_id`), or an in-flight idempotency key. Previously these surfaced as a bare `PostProxyError`.
+- **Instagram user tags.** `InstagramParams.user_tags` with the new `InstagramUserTag` type (`username`, `x`, `y`, `media_index`) — tag accounts on feed posts, reels, and stories.
+- `StatsRecord.raw_stats` — every metric under its original platform name, alongside the normalized `stats`.
+- `examples/backfill-posts.ts`, and cross-post comment listing in `examples/manage-comments.ts`.
+
+### Changed
+
+- LinkedIn post stats now normalize `likes`, `comments`, `shares`, and `clicks` alongside `impressions` (server-side; `stats` was already an open map).
+- `HUMAN_AGENT` is now approved on **both** Facebook and Instagram and extends the reply window to 7 days. `messages.send(chatId, { tag: "HUMAN_AGENT" })` is unchanged — see the README for Meta's policy limits.
+
 ## [1.11.0] - 2026-07-14
 
 ### Added

@@ -1,6 +1,6 @@
 export const BASE_URL = "https://api.postproxy.dev";
 
-export const VERSION = "1.11.0";
+export const VERSION = "1.12.0";
 
 export type Platform =
   | "facebook"
@@ -56,6 +56,10 @@ export type YouTubePrivacy = "public" | "unlisted" | "private";
 export type TelegramParseMode = "HTML" | "MarkdownV2";
 
 export type MessageDirection = "inbound" | "outbound";
+
+export type PostSyncTrigger = "connect" | "scheduled" | "backfill";
+
+export type PostSyncStatus = "pending" | "running" | "completed" | "failed";
 
 export type MessageStatus =
   | "pending"

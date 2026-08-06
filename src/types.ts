@@ -19,6 +19,8 @@ import type {
   TelegramParseMode,
   MessageDirection,
   MessageStatus,
+  PostSyncTrigger,
+  PostSyncStatus,
   WebhookEventType,
 } from "./constants";
 
@@ -214,6 +216,9 @@ export type ConnectionResponse =
 
 export interface StatsRecord {
   stats: Record<string, number | string | null>;
+  // Every metric under its original platform name, e.g. `views` for Instagram
+  // or `impression_count` for Twitter/X.
+  raw_stats: Record<string, unknown>;
   recorded_at: string;
 }
 
@@ -288,8 +293,53 @@ export interface Comment {
   replies: Comment[];
 }
 
+// Returned by `comments.listAll()`. Flat: replies are their own entries linked
+// to their parent by `parent_external_id` rather than nested under `replies`.
+export interface BulkComment {
+  post_id: string;
+  profile_id: string;
+  platform: Platform;
+  id: string;
+  external_id: string | null;
+  body: string;
+  status: string;
+  author_username: string | null;
+  author_avatar_url: string | null;
+  author_external_id: string | null;
+  metadata: Record<string, unknown> | null;
+  parent_external_id: string | null;
+  like_count: number;
+  is_hidden: boolean;
+  permalink: string | null;
+  platform_data: Record<string, unknown> | null;
+  attachments: Attachment[];
+  posted_at: string | null;
+  created_at: string;
+}
+
 export interface AcceptedResponse {
   accepted: boolean;
+}
+
+// --- Post Sync Models ---
+
+export interface PostSync {
+  id: string;
+  profile_id: string;
+  kind: string;
+  trigger: PostSyncTrigger;
+  status: PostSyncStatus;
+  started_at: string | null;
+  completed_at: string | null;
+  posts_seen: number;
+  // Posts that were new and got created — lower than `posts_seen` whenever the
+  // run re-read posts you already have.
+  posts_imported: number;
+  backfill_from: string | null;
+  // Publish date of the oldest post the run reached.
+  oldest_posted_at: string | null;
+  error: string | null;
+  created_at: string;
 }
 
 // --- Direct Message Models ---
@@ -522,6 +572,16 @@ export interface FacebookParams {
   page_id?: string;
 }
 
+// Images require `x` and `y`. Reels and video slides are tagged by username
+// only — Instagram ignores coordinates there.
+export interface InstagramUserTag {
+  username: string;
+  x?: number;
+  y?: number;
+  // Which media item to tag, 0-based. Defaults to 0.
+  media_index?: number;
+}
+
 export interface InstagramParams {
   format?: InstagramFormat;
   first_comment?: string;
@@ -530,6 +590,7 @@ export interface InstagramParams {
   audio_name?: string;
   trial_strategy?: boolean;
   thumb_offset?: number;
+  user_tags?: InstagramUserTag[];
 }
 
 export interface TikTokParams {

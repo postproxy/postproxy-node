@@ -41,6 +41,37 @@ const MOCK_COMMENT = {
   replies: [MOCK_REPLY],
 };
 
+const MOCK_BULK_COMMENT = {
+  post_id: "abc123xyz",
+  profile_id: "prof456",
+  platform: "instagram",
+  id: "cmt_abc123",
+  external_id: "17858893269123456",
+  body: "Great post!",
+  status: "synced",
+  author_username: "someuser",
+  author_avatar_url: null,
+  author_external_id: "12345",
+  metadata: null,
+  parent_external_id: null,
+  like_count: 3,
+  is_hidden: false,
+  permalink: null,
+  platform_data: null,
+  attachments: [],
+  posted_at: "2026-03-25T10:00:00Z",
+  created_at: "2026-03-25T10:01:00Z",
+};
+
+const MOCK_BULK_REPLY = {
+  ...MOCK_BULK_COMMENT,
+  id: "cmt_def456",
+  external_id: "17858893269123457",
+  body: "Thanks!",
+  parent_external_id: "17858893269123456",
+  like_count: 1,
+};
+
 describe("Comments Resource", () => {
   it("lists comments", async () => {
     const { client, getRequests } = createMockClient({
@@ -235,5 +266,73 @@ describe("Comments Resource", () => {
     expect(getRequests()[0].url).toContain("profile_id=prof1");
     const body = getRequests()[0].body as Record<string, unknown>;
     expect(body.text).toBe("DM-ing you the details.");
+  });
+
+  it("filters the per-post list by date", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { total: 1, page: 0, per_page: 20, data: [MOCK_COMMENT] },
+    });
+    await client.comments.list("post1", "prof1", {
+      from: "2026-03-25",
+      to: "2026-03-26T12:00:00Z",
+    });
+
+    const url = getRequests()[0].url;
+    expect(url).toContain("from=2026-03-25");
+    expect(url).toContain("to=2026-03-26T12%3A00%3A00Z");
+  });
+
+  it("lists comments across posts", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: {
+        total: 2,
+        page: 0,
+        per_page: 50,
+        data: [MOCK_BULK_COMMENT, MOCK_BULK_REPLY],
+      },
+    });
+    const result = await client.comments.listAll({
+      profiles: ["instagram", "prof456"],
+      postIds: ["abc123xyz", "def456uvw"],
+      from: "2026-03-25",
+      perPage: 50,
+    });
+
+    expect(result.total).toBe(2);
+    expect(result.data[0].post_id).toBe("abc123xyz");
+    expect(result.data[0].profile_id).toBe("prof456");
+    expect(result.data[0].platform).toBe("instagram");
+    // Flat: the reply is its own entry, linked by parent_external_id.
+    expect(result.data[1].parent_external_id).toBe("17858893269123456");
+
+    const request = getRequests()[0];
+    expect(request.method).toBe("GET");
+    expect(request.url).toContain("/api/comments");
+    expect(request.url).toContain("profiles=instagram%2Cprof456");
+    expect(request.url).toContain("post_ids=abc123xyz%2Cdef456uvw");
+    expect(request.url).toContain("from=2026-03-25");
+    expect(request.url).toContain("per_page=50");
+  });
+
+  it("lists comments across posts with no filters", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: { total: 0, page: 0, per_page: 20, data: [] },
+    });
+    await client.comments.listAll();
+
+    const url = getRequests()[0].url;
+    expect(url).toContain("/api/comments");
+    expect(url).not.toContain("profiles=");
+    expect(url).not.toContain("post_ids=");
+  });
+
+  it("passes an idempotency key when creating a comment", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: MOCK_COMMENT,
+    });
+    await client.comments.create("post1", "prof1", "Nice", {
+      idempotencyKey: "key-42",
+    });
+    expect(getRequests()[0].headers["Idempotency-Key"]).toBe("key-42");
   });
 });

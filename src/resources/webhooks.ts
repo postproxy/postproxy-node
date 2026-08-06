@@ -25,7 +25,7 @@ export class WebhooksResource {
   async create(
     url: string,
     events: string[],
-    options: { description?: string } = {},
+    options: { description?: string; idempotencyKey?: string } = {},
   ): Promise<Webhook> {
     const payload: Record<string, unknown> = { url, events };
     if (options.description != null) {
@@ -34,6 +34,7 @@ export class WebhooksResource {
 
     return (await this.client.request("POST", "/webhooks", {
       json: payload,
+      idempotencyKey: options.idempotencyKey,
     })) as Webhook;
   }
 
@@ -44,6 +45,7 @@ export class WebhooksResource {
       events?: string[];
       enabled?: boolean;
       description?: string;
+      idempotencyKey?: string;
     } = {},
   ): Promise<Webhook> {
     const payload: Record<string, unknown> = {};
@@ -54,14 +56,17 @@ export class WebhooksResource {
 
     return (await this.client.request("PATCH", `/webhooks/${id}`, {
       json: payload,
+      idempotencyKey: options.idempotencyKey,
     })) as Webhook;
   }
 
-  async delete(id: string): Promise<DeleteResponse> {
-    return (await this.client.request(
-      "DELETE",
-      `/webhooks/${id}`,
-    )) as DeleteResponse;
+  async delete(
+    id: string,
+    options: { idempotencyKey?: string } = {},
+  ): Promise<DeleteResponse> {
+    return (await this.client.request("DELETE", `/webhooks/${id}`, {
+      idempotencyKey: options.idempotencyKey,
+    })) as DeleteResponse;
   }
 
   async deliveries(

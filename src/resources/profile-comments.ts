@@ -54,7 +54,7 @@ export class ProfileCommentsResource {
     profileId: string,
     parentId: string,
     text: string,
-    options: { profileGroupId?: string } = {},
+    options: { profileGroupId?: string; idempotencyKey?: string } = {},
   ): Promise<ProfileComment> {
     return (await this.client.request(
       "POST",
@@ -62,6 +62,7 @@ export class ProfileCommentsResource {
       {
         json: { parent_id: parentId, text },
         profileGroupId: options.profileGroupId,
+        idempotencyKey: options.idempotencyKey,
       },
     )) as ProfileComment;
   }
@@ -69,13 +70,14 @@ export class ProfileCommentsResource {
   async delete(
     profileId: string,
     commentId: string,
-    options: { profileGroupId?: string } = {},
+    options: { profileGroupId?: string; idempotencyKey?: string } = {},
   ): Promise<AcceptedResponse> {
     return (await this.client.request(
       "DELETE",
       `/profiles/${profileId}/comments/${commentId}`,
       {
         profileGroupId: options.profileGroupId,
+        idempotencyKey: options.idempotencyKey,
       },
     )) as AcceptedResponse;
   }

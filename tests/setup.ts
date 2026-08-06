@@ -41,10 +41,17 @@ export function createMockClient(options: {
       url.searchParams.set("profile_group_id", pgId);
     }
 
+    const headers: Record<string, string> = {
+      Authorization: "Bearer test-api-key",
+    };
+    if (reqOptions.idempotencyKey != null) {
+      headers["Idempotency-Key"] = reqOptions.idempotencyKey as string;
+    }
+
     requests.push({
       method,
       url: url.toString(),
-      headers: { Authorization: "Bearer test-api-key" },
+      headers,
       body: reqOptions.json ?? reqOptions.formData ?? null,
     });
 
@@ -53,11 +60,12 @@ export function createMockClient(options: {
     if (responseStatus >= 400) {
       // Delegate to original to trigger error handling
       // But since we don't have a real server, simulate error
-      const { PostProxyError, AuthenticationError, NotFoundError, ValidationError, BadRequestError } = await import("../src/exceptions.js");
+      const { PostProxyError, AuthenticationError, ConflictError, NotFoundError, ValidationError, BadRequestError } = await import("../src/exceptions.js");
       const msg = (responseBody as Record<string, string>)?.error ?? "Error";
       switch (responseStatus) {
         case 401: throw new AuthenticationError(msg, responseBody as Record<string, unknown>);
         case 404: throw new NotFoundError(msg, responseBody as Record<string, unknown>);
+        case 409: throw new ConflictError(msg, responseBody as Record<string, unknown>);
         case 422: throw new ValidationError(msg, responseBody as Record<string, unknown>);
         case 400: throw new BadRequestError(msg, responseBody as Record<string, unknown>);
         default: throw new PostProxyError(msg, responseStatus, responseBody as Record<string, unknown>);

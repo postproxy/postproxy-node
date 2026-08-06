@@ -1,5 +1,6 @@
 import type { PostProxy } from "../client";
 import type {
+  BulkComment,
   Comment,
   Message,
   PaginatedResponse,
@@ -13,12 +14,17 @@ export class CommentsResource {
     this.client = client;
   }
 
+  // `from` and `to` filter on when PostProxy received the comment
+  // (`created_at`), not the platform's `posted_at`. They apply to top-level
+  // comments — one in range brings its full `replies` array with it.
   async list(
     postId: string,
     profileId: string,
     options: {
       page?: number;
       perPage?: number;
+      from?: string;
+      to?: string;
       profileGroupId?: string;
     } = {},
   ): Promise<PaginatedResponse<Comment>> {
@@ -28,11 +34,42 @@ export class CommentsResource {
 
     if (options.page != null) params.page = String(options.page);
     if (options.perPage != null) params.per_page = String(options.perPage);
+    if (options.from != null) params.from = options.from;
+    if (options.to != null) params.to = options.to;
 
     return (await this.client.request("GET", `/posts/${postId}/comments`, {
       params,
       profileGroupId: options.profileGroupId,
     })) as PaginatedResponse<Comment>;
+  }
+
+  // Comments spanning every post in the profile group. Flat: replies come back
+  // as their own entries linked by `parent_external_id`, so `total` counts
+  // every comment. `profiles` takes profile IDs or network names, mixed.
+  async listAll(
+    options: {
+      postIds?: string[];
+      profiles?: string[];
+      from?: string;
+      to?: string;
+      page?: number;
+      perPage?: number;
+      profileGroupId?: string;
+    } = {},
+  ): Promise<PaginatedResponse<BulkComment>> {
+    const params: Record<string, string> = {};
+
+    if (options.postIds != null) params.post_ids = options.postIds.join(",");
+    if (options.profiles != null) params.profiles = options.profiles.join(",");
+    if (options.from != null) params.from = options.from;
+    if (options.to != null) params.to = options.to;
+    if (options.page != null) params.page = String(options.page);
+    if (options.perPage != null) params.per_page = String(options.perPage);
+
+    return (await this.client.request("GET", "/comments", {
+      params,
+      profileGroupId: options.profileGroupId,
+    })) as PaginatedResponse<BulkComment>;
   }
 
   async get(
@@ -62,6 +99,7 @@ export class CommentsResource {
     options: {
       parentId?: string;
       profileGroupId?: string;
+      idempotencyKey?: string;
     } = {},
   ): Promise<Comment> {
     const params: Record<string, string> = {
@@ -75,6 +113,7 @@ export class CommentsResource {
       params,
       json,
       profileGroupId: options.profileGroupId,
+      idempotencyKey: options.idempotencyKey,
     })) as Comment;
   }
 
@@ -82,7 +121,7 @@ export class CommentsResource {
     postId: string,
     commentId: string,
     profileId: string,
-    options: { profileGroupId?: string } = {},
+    options: { profileGroupId?: string; idempotencyKey?: string } = {},
   ): Promise<AcceptedResponse> {
     const params: Record<string, string> = {
       profile_id: profileId,
@@ -94,6 +133,7 @@ export class CommentsResource {
       {
         params,
         profileGroupId: options.profileGroupId,
+        idempotencyKey: options.idempotencyKey,
       },
     )) as AcceptedResponse;
   }
@@ -102,7 +142,7 @@ export class CommentsResource {
     postId: string,
     commentId: string,
     profileId: string,
-    options: { profileGroupId?: string } = {},
+    options: { profileGroupId?: string; idempotencyKey?: string } = {},
   ): Promise<AcceptedResponse> {
     const params: Record<string, string> = {
       profile_id: profileId,
@@ -114,6 +154,7 @@ export class CommentsResource {
       {
         params,
         profileGroupId: options.profileGroupId,
+        idempotencyKey: options.idempotencyKey,
       },
     )) as AcceptedResponse;
   }
@@ -122,7 +163,7 @@ export class CommentsResource {
     postId: string,
     commentId: string,
     profileId: string,
-    options: { profileGroupId?: string } = {},
+    options: { profileGroupId?: string; idempotencyKey?: string } = {},
   ): Promise<AcceptedResponse> {
     const params: Record<string, string> = {
       profile_id: profileId,
@@ -134,6 +175,7 @@ export class CommentsResource {
       {
         params,
         profileGroupId: options.profileGroupId,
+        idempotencyKey: options.idempotencyKey,
       },
     )) as AcceptedResponse;
   }
@@ -142,7 +184,7 @@ export class CommentsResource {
     postId: string,
     commentId: string,
     profileId: string,
-    options: { profileGroupId?: string } = {},
+    options: { profileGroupId?: string; idempotencyKey?: string } = {},
   ): Promise<AcceptedResponse> {
     const params: Record<string, string> = {
       profile_id: profileId,
@@ -154,6 +196,7 @@ export class CommentsResource {
       {
         params,
         profileGroupId: options.profileGroupId,
+        idempotencyKey: options.idempotencyKey,
       },
     )) as AcceptedResponse;
   }
@@ -162,7 +205,7 @@ export class CommentsResource {
     postId: string,
     commentId: string,
     profileId: string,
-    options: { profileGroupId?: string } = {},
+    options: { profileGroupId?: string; idempotencyKey?: string } = {},
   ): Promise<AcceptedResponse> {
     const params: Record<string, string> = {
       profile_id: profileId,
@@ -174,6 +217,7 @@ export class CommentsResource {
       {
         params,
         profileGroupId: options.profileGroupId,
+        idempotencyKey: options.idempotencyKey,
       },
     )) as AcceptedResponse;
   }
@@ -185,7 +229,7 @@ export class CommentsResource {
     commentId: string,
     profileId: string,
     text: string,
-    options: { profileGroupId?: string } = {},
+    options: { profileGroupId?: string; idempotencyKey?: string } = {},
   ): Promise<Message> {
     const params: Record<string, string> = {
       profile_id: profileId,
@@ -198,6 +242,7 @@ export class CommentsResource {
         params,
         json: { text },
         profileGroupId: options.profileGroupId,
+        idempotencyKey: options.idempotencyKey,
       },
     )) as Message;
   }
