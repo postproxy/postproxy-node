@@ -1,7 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 import type { PostProxy } from "../client";
-import type { Message, PaginatedResponse } from "../types";
+import type {
+  Message,
+  MessageButton,
+  MessageCard,
+  PaginatedResponse,
+  QuickReply,
+} from "../types";
 import type { MessageDirection, MessageStatus } from "../constants";
 
 function getMimeType(filePath: string): string {
@@ -59,6 +65,13 @@ export class MessagesResource {
       tag?: string;
       replyToExternalId?: string;
       replyMarkup?: Record<string, unknown>;
+      // Facebook and Instagram only; `422` on Telegram and Bluesky. Sent on the
+      // JSON path only — pass `media` as URLs rather than `mediaFiles` when
+      // combining with an attachment.
+      quickReplies?: QuickReply[];
+      buttons?: MessageButton[];
+      // Requires `buttons`.
+      card?: MessageCard;
       profileGroupId?: string;
       idempotencyKey?: string;
     } = {},
@@ -70,6 +83,9 @@ export class MessagesResource {
       tag,
       replyToExternalId,
       replyMarkup,
+      quickReplies,
+      buttons,
+      card,
       profileGroupId,
       idempotencyKey,
     } = options;
@@ -113,6 +129,9 @@ export class MessagesResource {
     if (replyToExternalId != null)
       json.reply_to_external_id = replyToExternalId;
     if (replyMarkup != null) json.reply_markup = replyMarkup;
+    if (quickReplies != null) json.quick_replies = quickReplies;
+    if (buttons != null) json.buttons = buttons;
+    if (card != null) json.card = card;
 
     return (await this.client.request("POST", `/chats/${chatId}/messages`, {
       json,

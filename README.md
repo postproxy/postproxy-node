@@ -524,7 +524,79 @@ await client.messages.edit(sent.id, { body: "Updated answer." });
 // React / unreact (Facebook & Instagram)
 await client.messages.react(sent.id, { reaction: "love", emoji: "❤️" });
 await client.messages.unreact(sent.id);
+
+// Telegram: thread under a message and attach an inline keyboard
+await client.messages.send(chat.id, {
+  body: "Pick one",
+  replyToExternalId: "4821",
+  replyMarkup: {
+    inline_keyboard: [[{ text: "Track order", callback_data: "track:9821" }]],
+  },
+});
 ```
+
+#### Quick replies and buttons (Facebook & Instagram)
+
+Meta's two interactive primitives. **Quick replies** are chips above the participant's
+composer that disappear once tapped; **buttons** are attached to the message and stay in
+the thread. Telegram's equivalent is `replyMarkup` above — passing `quickReplies` or
+`buttons` on a Telegram or Bluesky chat returns `422`.
+
+```typescript
+// Quick replies — up to 13. `title` ≤ 20 chars, `payload` ≤ 1000.
+await client.messages.send(chat.id, {
+  body: "What can I help with?",
+  quickReplies: [
+    { title: "Track order", payload: "TRACK" },
+    { title: "Talk to support", payload: "HELP" },
+  ],
+});
+
+// Buttons — up to 3, each either web_url or postback. `card` is optional and
+// requires `buttons`.
+await client.messages.send(chat.id, {
+  body: "Your order shipped",
+  buttons: [
+    { type: "web_url", title: "Track", url: "https://shop.example.com/o/123" },
+    { type: "postback", title: "Cancel", payload: "CANCEL:123" },
+  ],
+  card: {
+    subtitle: "Arriving Friday",
+    image_url: "https://cdn.example.com/shoe.png",
+    default_action: { type: "web_url", url: "https://shop.example.com/o/123" },
+  },
+});
+```
+
+Buttons are delivered as a Meta generic template and your `body` becomes the template's
+element title — so **`body` is capped at 80 characters when buttons are present**. That is
+Meta's limit, not PostProxy's, and a longer body is rejected with a `422` naming the
+length. Buttons cannot be combined with media. Instagram is stricter than Messenger: it
+delivers quick replies only on a plain-text message, so `quickReplies` with media or with
+`buttons` returns `422` on Instagram while both are accepted on Facebook.
+
+Validation happens server-side and names the offending index — `buttons[1].url must be an
+https:// URL` — surfacing as the SDK's usual error for a `422`.
+
+> The new params are sent on the JSON path only. To combine quick replies with an
+> attachment, pass `media` as a hosted URL rather than uploading via `mediaFiles`.
+
+A tap comes back as an **inbound message** carrying `tapped_action`:
+
+```typescript
+const inbound = await client.messages.list(chat.id, { direction: "inbound" });
+for (const msg of inbound.data) {
+  if (msg.tapped_action) {
+    // kind: "quick_reply" | "postback" | "callback_query"
+    console.log(msg.tapped_action.kind, msg.tapped_action.payload);
+  }
+}
+```
+
+Subscribe to `message.received` to react to taps as they happen — the same field is on the
+webhook payload. `tapped_action` is derived rather than stored, so it also resolves for
+taps recorded before PostProxy exposed it, including Instagram ice-breaker taps and
+Telegram callback queries (`kind: "callback_query"`). A tap also opens the 24h window.
 
 #### The `HUMAN_AGENT` tag
 

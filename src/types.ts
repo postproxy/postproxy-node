@@ -369,6 +369,59 @@ export interface Chat {
   created_at: string;
 }
 
+// A tappable chip rendered above the participant's composer, gone once tapped.
+// Facebook and Instagram only. Up to 13 per send.
+export interface QuickReply {
+  // Only "text" is accepted. Optional on send; always present on responses.
+  content_type?: string;
+  // 20 characters or fewer.
+  title: string;
+  // 1000 characters or fewer. Comes back on the tap as `tapped_action.payload`.
+  payload: string;
+}
+
+// A button attached to the message itself, delivered as a Meta generic
+// template. Facebook and Instagram only. Up to 3 per send.
+//
+// `url` is required when `type` is "web_url" and must be https; `payload` is
+// required when `type` is "postback". Left as a plain string rather than a
+// union so a new Meta button type needs no SDK release.
+export interface MessageButton {
+  type: string;
+  // 20 characters or fewer.
+  title: string;
+  url?: string;
+  payload?: string;
+}
+
+export interface CardDefaultAction {
+  type: string;
+  url: string;
+}
+
+// Fills in the rest of the generic-template element that carries `buttons`,
+// for a richer product-style card. Requires `buttons`.
+export interface MessageCard {
+  // 80 characters or fewer.
+  subtitle?: string;
+  image_url?: string;
+  default_action?: CardDefaultAction;
+}
+
+// Set on inbound messages created by a tap on an interactive element you sent.
+// Derived from `platform_data`, so it also resolves for taps ingested before
+// PostProxy exposed this field. `callback_query` is Telegram, so this is not
+// Meta-only even though `quick_replies` / `buttons` are.
+export type TappedActionKind = "quick_reply" | "postback" | "callback_query";
+
+export interface TappedAction {
+  kind: TappedActionKind;
+  // The payload you set on the quick reply, button, or ice breaker.
+  payload: string;
+  // The label the participant tapped.
+  title: string | null;
+}
+
 export interface Message {
   id: string;
   chat_id: string;
@@ -386,6 +439,10 @@ export interface Message {
   external_edited_at: string | null;
   reply_to_external_id: string | null;
   reply_markup: Record<string, unknown> | null;
+  quick_replies: QuickReply[] | null;
+  buttons: MessageButton[] | null;
+  card: MessageCard | null;
+  tapped_action: TappedAction | null;
   external_deleted_at: string | null;
   reactions: Reaction[];
   attachments: Attachment[];

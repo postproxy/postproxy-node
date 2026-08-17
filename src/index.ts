@@ -107,6 +107,12 @@ export type {
   Reaction,
   Chat,
   Message,
+  QuickReply,
+  MessageButton,
+  MessageCard,
+  CardDefaultAction,
+  TappedAction,
+  TappedActionKind,
   MediaPlatformError,
   AcceptedResponse,
 } from "./types";

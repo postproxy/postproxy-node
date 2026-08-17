@@ -18,6 +18,10 @@ const MOCK_INBOUND = {
   external_edited_at: null,
   reply_to_external_id: null,
   reply_markup: null,
+  quick_replies: null,
+  buttons: null,
+  card: null,
+  tapped_action: null,
   external_deleted_at: null,
   reactions: [
     {
@@ -49,11 +53,28 @@ const MOCK_OUTBOUND = {
   external_edited_at: null,
   reply_to_external_id: null,
   reply_markup: null,
+  quick_replies: null,
+  buttons: null,
+  card: null,
+  tapped_action: null,
   external_deleted_at: null,
   reactions: [],
   attachments: [],
   is_unsupported: false,
   created_at: "2026-05-31T15:30:05.000Z",
+};
+
+// An inbound message created by tapping a quick reply the bot sent earlier.
+const MOCK_TAPPED = {
+  ...MOCK_INBOUND,
+  id: "msg_333",
+  body: "Track order",
+  tapped_action: {
+    kind: "quick_reply",
+    payload: "TRACK",
+    title: "Track order",
+  },
+  reactions: [],
 };
 
 describe("Messages Resource", () => {
@@ -109,6 +130,81 @@ describe("Messages Resource", () => {
     });
     const body = getRequests()[0].body as Record<string, unknown>;
     expect(body.media).toEqual(["https://cdn.example.com/photo.png"]);
+  });
+
+  it("sends quick replies", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: {
+        ...MOCK_OUTBOUND,
+        quick_replies: [
+          { content_type: "text", title: "Track order", payload: "TRACK" },
+        ],
+      },
+    });
+    const msg = await client.messages.send("chat_xyz789", {
+      body: "What can I help with?",
+      quickReplies: [
+        { title: "Track order", payload: "TRACK" },
+        { title: "Talk to support", payload: "HELP" },
+      ],
+    });
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.quick_replies).toEqual([
+      { title: "Track order", payload: "TRACK" },
+      { title: "Talk to support", payload: "HELP" },
+    ]);
+    // The API normalizes `content_type` in, so it comes back populated.
+    expect(msg.quick_replies?.[0].content_type).toBe("text");
+  });
+
+  it("sends buttons with a card", async () => {
+    const { client, getRequests } = createMockClient({
+      responseBody: {
+        ...MOCK_OUTBOUND,
+        buttons: [
+          { type: "web_url", title: "Track", url: "https://shop.example.com" },
+        ],
+        card: { subtitle: "Arriving Friday" },
+      },
+    });
+    const msg = await client.messages.send("chat_xyz789", {
+      body: "Your order shipped",
+      buttons: [
+        { type: "web_url", title: "Track", url: "https://shop.example.com" },
+        { type: "postback", title: "Cancel", payload: "CANCEL:123" },
+      ],
+      card: {
+        subtitle: "Arriving Friday",
+        image_url: "https://cdn.example.com/shoe.png",
+        default_action: {
+          type: "web_url",
+          url: "https://shop.example.com/p/air-max",
+        },
+      },
+    });
+    const body = getRequests()[0].body as Record<string, unknown>;
+    expect(body.buttons).toEqual([
+      { type: "web_url", title: "Track", url: "https://shop.example.com" },
+      { type: "postback", title: "Cancel", payload: "CANCEL:123" },
+    ]);
+    expect(body.card).toEqual({
+      subtitle: "Arriving Friday",
+      image_url: "https://cdn.example.com/shoe.png",
+      default_action: {
+        type: "web_url",
+        url: "https://shop.example.com/p/air-max",
+      },
+    });
+    expect(msg.buttons?.[0].url).toBe("https://shop.example.com");
+    expect(msg.card?.subtitle).toBe("Arriving Friday");
+  });
+
+  it("reads tapped_action off an inbound tap", async () => {
+    const { client } = createMockClient({ responseBody: MOCK_TAPPED });
+    const msg = await client.messages.get("msg_333");
+    expect(msg.tapped_action?.kind).toBe("quick_reply");
+    expect(msg.tapped_action?.payload).toBe("TRACK");
+    expect(msg.tapped_action?.title).toBe("Track order");
   });
 
   it("sends a media message from local file via multipart", async () => {
