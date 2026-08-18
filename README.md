@@ -1,6 +1,6 @@
-# PostProxy Node SDK
+# Postproxy Node SDK
 
-TypeScript/JavaScript client for the [PostProxy API](https://postproxy.dev). Fully typed with zero runtime dependencies — uses native `fetch`, `FormData`, and `Blob` (Node.js 18+).
+TypeScript/JavaScript client for the [Postproxy API](https://postproxy.dev). Fully typed with zero runtime dependencies — uses native `fetch`, `FormData`, and `Blob` (Node.js 18+).
 
 ## Installation
 
@@ -570,7 +570,7 @@ await client.messages.send(chat.id, {
 
 Buttons are delivered as a Meta generic template and your `body` becomes the template's
 element title — so **`body` is capped at 80 characters when buttons are present**. That is
-Meta's limit, not PostProxy's, and a longer body is rejected with a `422` naming the
+Meta's limit, not Postproxy's, and a longer body is rejected with a `422` naming the
 length. Buttons cannot be combined with media. Instagram is stricter than Messenger: it
 delivers quick replies only on a plain-text message, so `quickReplies` with media or with
 `buttons` returns `422` on Instagram while both are accepted on Facebook.
@@ -595,16 +595,16 @@ for (const msg of inbound.data) {
 
 Subscribe to `message.received` to react to taps as they happen — the same field is on the
 webhook payload. `tapped_action` is derived rather than stored, so it also resolves for
-taps recorded before PostProxy exposed it, including Instagram ice-breaker taps and
+taps recorded before Postproxy exposed it, including Instagram ice-breaker taps and
 Telegram callback queries (`kind: "callback_query"`). A tap also opens the 24h window.
 
 #### The `HUMAN_AGENT` tag
 
-`HUMAN_AGENT` is Meta's Human Agent message tag, approved for PostProxy on **both
+`HUMAN_AGENT` is Meta's Human Agent message tag, approved for Postproxy on **both
 Facebook and Instagram**. It extends the reply window from 24 hours to **7 days** after the
 participant's last inbound message, and allows free-form content (no template).
 
-PostProxy does not enforce the 7-day ceiling — past it, Meta rejects the send and the
+Postproxy does not enforce the 7-day ceiling — past it, Meta rejects the send and the
 message lands in `status: "failed"` with the platform error in `error_details`. The tag is
 ignored on Telegram, and Bluesky has no messaging window at all.
 
@@ -686,7 +686,7 @@ console.log(result.success); // true
 
 #### Post syncs & backfill
 
-PostProxy mirrors posts published natively on a platform into your account. Every one of
+Postproxy mirrors posts published natively on a platform into your account. Every one of
 those pulls is recorded as a **post sync**: the one fired when the profile connects, the
 recurring poll, and any backfill you start.
 
@@ -725,7 +725,7 @@ const runs = await client.profiles.postSyncs("profile-id", {
 | `error` | Platform error message when `status` is `failed` |
 | `created_at` | ISO 8601 timestamp |
 
-**How far back a backfill reaches depends on the platform's API**, not on PostProxy: where
+**How far back a backfill reaches depends on the platform's API**, not on Postproxy: where
 history is pageable we follow it, otherwise the run ends early with whatever it got and
 still reports `status: "completed"`.
 

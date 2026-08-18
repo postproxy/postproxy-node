@@ -2,6 +2,14 @@
   "name": "postproxy-sdk",
   "version": "1.13.0",
   "description": "Official Postproxy SDK for TypeScript/JavaScript",
+  "homepage": "https://postproxy.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/postproxy/postproxy-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/postproxy/postproxy-node/issues"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
